@@ -19,15 +19,15 @@ import {
 } from "./audit-reader.js";
 import { missingRequirements } from "./graph-data.js";
 import { keepFocus, myCourses } from "./my-courses.js";
-import { slotKind, slotKindFor } from "./plan-insights.js";
-import { requirementCourses } from "./requirement-courses.js";
+import { SLOT_HOURS, slotKindFor, slotTitle } from "./plan-insights.js";
+import { courseFacts, requirementCourses } from "./requirement-courses.js";
 import { termLabel, termOrder } from "./terms.js";
 
 const PDFJS_CDN = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/";
 const STORAGE_KEY = "degreeAudit";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const OPTIONS_SHOWN = 18; // course chips shown per requirement before "show all"
-const GEN_ED_OPTIONS = 12;
+const OPTIONS_SHOWN = 8; // course chips shown per requirement before "show all"
+const GEN_ED_OPTIONS = 40; // Gen Ed courses looked at (best GPA first) before the list is trimmed
 const DEGREE_AUDIT_HELP = "https://registrar.illinois.edu/academic-records/dars-audit/";
 
 /** The audit saved in this browser (requirements and course codes only), or null. */
@@ -96,24 +96,50 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
     );
   }
 
-  /** The courses that can meet a part, best first, with the rest behind "show all". */
-  function options(part, graph, taken) {
+  /**
+   * The courses that can meet a part, best first (can take now, then higher GPA), with the rest
+   * behind "show all". Courses not offered lately are left out, and ones already taken are listed
+   * once as counted rather than as choices.
+   */
+  function options(part, graph, taken, facts) {
     const genEd = part.selectFrom.length === 0 ? genEdCodesFor(part.title) : [];
     const courses = requirementCourses(rows, part, { genEdLimit: GEN_ED_OPTIONS });
     const anyLevel = part.selectFrom.filter((pattern) => pattern.subject === "*").map(describePattern);
-    const ranked = courses.map(([id, title]) => ({ id, title, state: standing(id, graph, taken) }));
-    ranked.sort((a, b) => STANDING_ORDER[a.state] - STANDING_ORDER[b.state]);
+    const counted = courses.filter(([id]) => myCourses.status(id) === "taken");
+    const offered = courses.filter(([id]) => myCourses.status(id) !== "taken" && facts.get(id)?.offered);
+    const hidden = courses.length - counted.length - offered.length;
+    const ranked = offered.map(([id, title]) => ({ id, title, state: standing(id, graph, taken) }));
+    ranked.sort(
+      (a, b) =>
+        STANDING_ORDER[a.state] - STANDING_ORDER[b.state] ||
+        (facts.get(b.id)?.gpa ?? 0) - (facts.get(a.id)?.gpa ?? 0) ||
+        a.id.localeCompare(b.id),
+    );
     const chips = ranked.map(({ id, title, state }) => chip(id, title, state));
 
     const pieces = [];
-    if (genEd.length > 0) {
-      pieces.push(planNote(part));
+    if (genEd.length > 0) pieces.push(planNote(part));
+    if (counted.length > 0) {
       pieces.push(
-        element("p", { className: "audit-hint", textContent: "Gen Ed courses that count, highest average GPA first:" }),
+        element(
+          "p",
+          { className: "audit-hint audit-counted" },
+          "Counted already: ",
+          ...counted.flatMap(([id], i) => [
+            i > 0 ? ", " : "",
+            element("a", { href: courseHash(id), textContent: `✓ ${id}` }),
+          ]),
+        ),
       );
     }
     if (chips.length > 0) {
-      pieces.push(element("div", { className: "audit-chips" }, ...chips.slice(0, OPTIONS_SHOWN)));
+      pieces.push(
+        element("p", {
+          className: "audit-hint",
+          textContent: genEd.length > 0 ? "Gen Ed courses that count, best first:" : "Courses that count, best first:",
+        }),
+        element("div", { className: "audit-chips" }, ...chips.slice(0, OPTIONS_SHOWN)),
+      );
       if (chips.length > OPTIONS_SHOWN) {
         pieces.push(
           element(
@@ -124,6 +150,14 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           ),
         );
       }
+    }
+    if (hidden > 0) {
+      pieces.push(
+        element("p", {
+          className: "audit-hint audit-old",
+          textContent: `${hidden} older course${hidden === 1 ? "" : "s"} not offered lately ${hidden === 1 ? "is" : "are"} left out.`,
+        }),
+      );
     }
     if (anyLevel.length > 0)
       pieces.push(element("p", { className: "audit-hint", textContent: `Also counts: ${anyLevel.join(", ")}.` }));
@@ -148,6 +182,70 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
   }
 
   /**
+   * How far the plan goes toward a part: planned courses that count (and, for a Gen Ed, open
+   * slots, 3 hours each), as { state: "planned" | "partly" | "none", have, need, unit }.
+   * "Any 400-level course" parts can't be checked, so they count only listed courses.
+   */
+  function coverage(part, facts) {
+    const needCourses = part.needs?.courses ?? (part.needs?.hours ? 0 : 1);
+    const needHours = part.needs?.hours ?? 0;
+    // Counted only in hours, with no course list ("ADVANCED HOURS", "45 HOURS OF UIUC COURSEWORK"):
+    // every planned hour counts (300-level and up for advanced hours).
+    if (needHours > 0 && !needCourses && part.selectFrom.length === 0 && genEdCodesFor(part.title).length === 0) {
+      return hoursCoverage(part.title, needHours, facts);
+    }
+    const planned = requirementCourses(rows, part)
+      .map(([id]) => id)
+      .filter((id) => myCourses.status(id) === "planned");
+    const kind = slotKindFor(part.title);
+    const slots = kind ? myCourses.slots().filter((slot) => [slot.kind, ...slot.also].includes(kind)) : [];
+    const courses = planned.length + slots.length;
+    const hours = planned.reduce((sum, id) => sum + (facts.get(id)?.hours ?? 3), 0) + slots.length * SLOT_HOURS;
+    const byHours = needHours > 0 && !needCourses;
+    const have = byHours ? hours : courses;
+    const need = byHours ? needHours : needCourses;
+    const state = have >= need && hours >= needHours ? "planned" : have > 0 ? "partly" : "none";
+    return { state, have: Math.min(have, need), need, unit: byHours ? "hours" : "courses" };
+  }
+
+  /** How many of `needHours` the plan's planned courses (and Gen Ed slots) add up to. */
+  function hoursCoverage(title, needHours, facts) {
+    const advanced = /ADVANCED/.test(title);
+    const planned = myCourses
+      .ids("planned")
+      .filter((id) => !advanced || Number(id.split(" ")[1]) >= 300)
+      .reduce((sum, id) => sum + (facts.get(id)?.hours ?? 3), 0);
+    const slots = advanced ? 0 : myCourses.slots().length * SLOT_HOURS;
+    const have = planned + slots;
+    return {
+      state: have >= needHours ? "planned" : have > 0 ? "partly" : "none",
+      have: Math.min(have, needHours),
+      need: needHours,
+      unit: "hours",
+    };
+  }
+
+  const COVERAGE_TEXT = {
+    planned: () => "✓ In your plan",
+    partly: (c) => `Partly planned: ${c.have} of ${c.need} ${c.unit}`,
+    none: () => "Not planned yet",
+  };
+
+  /** A small label saying how far the plan goes toward a part. */
+  function coverageBadge(cover) {
+    return element("span", { className: `audit-cover ${cover.state}`, textContent: COVERAGE_TEXT[cover.state](cover) });
+  }
+
+  /** The best option of a "pick one" choice: the one the plan gets furthest with. */
+  function closestPart(group, facts) {
+    const score = (part) => {
+      const cover = coverage(part, facts);
+      return cover.state === "planned" ? 2 : cover.have / Math.max(cover.need, 1);
+    };
+    return group.reduce((best, part) => (score(part) > score(best) ? part : best), group[0]);
+  }
+
+  /**
    * What the plan already holds for a Gen Ed part: planned courses that count for it ("CS 211,
    * Spring 2028"), and open slots, in semester order. "" when there are none.
    */
@@ -162,7 +260,7 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
     const open = kind
       ? myCourses
           .slots()
-          .filter((slot) => slot.kind === kind)
+          .filter((slot) => [slot.kind, ...slot.also].includes(kind))
           .sort(byTerm)
       : [];
     if (planned.length === 0 && open.length === 0) return "";
@@ -179,9 +277,10 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       );
     }
     if (open.length > 0) {
-      const slots = `${open.length === 1 ? "an open" : `${open.length} open`} ${slotKind(kind).name} slot${open.length === 1 ? "" : "s"}`;
+      // A shared slot is named with both Gen Eds: "Humanities & the Arts + Western/Comparative Cultures".
+      const list = open.map((slot) => `${slotTitle(slot)}, ${when(slot.term)}`).join("; ");
       pieces.push(
-        `Your plan has ${slots} (${open.map((slot) => when(slot.term)).join(", ")}). `,
+        `Your plan has ${open.length === 1 ? "an open slot" : `${open.length} open slots`} for this (${list}). `,
         element("a", { href: "#plan", textContent: "Pick courses on My plan →" }),
       );
     }
@@ -190,49 +289,69 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
 
   const needsText = (needs) => (needs ? `Still needs ${describeNeeds(needs)}` : "Still needs one of these");
 
+  /** "Pick 1 of 2 courses" for a part with a short list, else "Still needs 1 course". */
+  function partNeedsText(part) {
+    const listed = part.selectFrom.filter((pattern) => pattern.subject !== "*" && pattern.number.length === 3).length;
+    const count = part.needs?.courses ?? (part.needs ? 0 : 1);
+    if (count > 0 && !part.needs?.hours && listed > count && listed <= 6 && listed === part.selectFrom.length) {
+      return `Pick ${count} of these ${listed}`;
+    }
+    return needsText(part.needs);
+  }
+
   /** One unmet part, or a choice between parts ("pick one focus area"). */
-  function groupItem(group, graph, taken) {
+  function groupItem(group, graph, taken, facts, anchor) {
     if (group.length === 1) {
       const [part] = group;
       return element(
         "li",
-        { className: "audit-item" },
+        { className: "audit-item", id: anchor },
         element(
           "div",
           { className: "audit-item-head" },
           element("h4", { textContent: titleCase(part.title) }),
-          element("span", { className: "audit-needs", textContent: needsText(part.needs) }),
+          element("span", { className: "audit-needs", textContent: partNeedsText(part) }),
+          coverageBadge(coverage(part, facts)),
         ),
-        ...options(part, graph, taken),
+        ...options(part, graph, taken, facts),
       );
     }
+    const closest = closestPart(group, facts);
     return element(
       "li",
-      { className: "audit-item" },
+      { className: "audit-item", id: anchor },
       element(
         "div",
         { className: "audit-item-head" },
         element("h4", { textContent: `Pick one of ${group.length}` }),
-        element("span", { className: "audit-needs", textContent: needsText(group[0].needs) }),
+        element("span", { className: "audit-needs", textContent: "Meet any one of these" }),
+        coverageBadge(coverage(closest, facts)),
       ),
-      element("p", { className: "audit-hint", textContent: "Meet any one of these. Open one to see its courses." }),
-      ...group.map((part) =>
-        element(
+      element("p", {
+        className: "audit-hint",
+        textContent: `Only one of these ${group.length} is needed. The one your plan is closest to is open; open another to compare.`,
+      }),
+      ...group.map((part) => {
+        const cover = coverage(part, facts);
+        return element(
           "details",
-          { className: "audit-choice" },
+          { className: `audit-choice${part === closest ? " closest" : ""}`, open: part === closest },
           element(
             "summary",
             {},
-            titleCase(part.title),
+            element("span", { className: "audit-choice-title", textContent: titleCase(part.title) }),
+            part === closest ? element("span", { className: "audit-closest", textContent: "closest" }) : "",
             element("span", { className: "audit-needs", textContent: describeNeeds(part.needs) }),
+            coverageBadge(cover),
           ),
-          ...options(part, graph, taken),
-        ),
-      ),
+          ...options(part, graph, taken, facts),
+        );
+      }),
     );
   }
 
-  function sectionCard(requirement, graph, taken) {
+  /** One requirement section: its unfinished parts, with the finished ones folded away. */
+  function sectionCard(requirement, graph, taken, facts, anchorFor) {
     const open = partGroups(requirement).filter((group) => !group.some(partIsMet));
     const done = requirement.parts.filter(partIsMet).map((part) => titleCase(part.title));
     return element(
@@ -246,10 +365,87 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           ? element("span", { className: "audit-needs", textContent: needsText(requirement.needs) })
           : "",
       ),
-      done.length > 0 ? element("p", { className: "audit-done-parts", textContent: `Done: ${done.join(" · ")}` }) : "",
-      open.length > 0
-        ? element("ul", { className: "audit-items" }, ...open.map((group) => groupItem(group, graph, taken)))
+      done.length > 0
+        ? element(
+            "details",
+            { className: "audit-done-parts" },
+            element("summary", { textContent: `✓ ${done.length} part${done.length === 1 ? "" : "s"} done` }),
+            element("p", { textContent: done.join(" · ") }),
+          )
         : "",
+      open.length > 0
+        ? element(
+            "ul",
+            { className: "audit-items" },
+            ...open.map((group) => groupItem(group, graph, taken, facts, anchorFor(group))),
+          )
+        : "",
+    );
+  }
+
+  /**
+   * "What's left": one line per unfinished requirement, what it needs, and whether the plan
+   * covers it yet. A line scrolls to its requirement below.
+   */
+  function overview(open, facts, anchorFor) {
+    const rowsLeft = [];
+    for (const requirement of open) {
+      const groups = partGroups(requirement).filter((group) => !group.some(partIsMet));
+      if (groups.length === 0) {
+        const needHours = requirement.needs?.hours;
+        rowsLeft.push({
+          title: titleCase(requirement.title),
+          needs: needsText(requirement.needs),
+          cover: needHours ? hoursCoverage(requirement.title, needHours, facts) : null,
+        });
+      }
+      for (const group of groups) {
+        const part = group.length === 1 ? group[0] : closestPart(group, facts);
+        rowsLeft.push({
+          title:
+            group.length === 1 ? titleCase(part.title) : `${titleCase(requirement.title)}: pick one of ${group.length}`,
+          needs: group.length === 1 ? partNeedsText(part) : `Closest: ${titleCase(part.title)}`,
+          cover: coverage(part, facts),
+          anchor: anchorFor(group),
+        });
+      }
+    }
+    const inPlan = rowsLeft.filter((row) => row.cover?.state === "planned").length;
+    return element(
+      "section",
+      { className: "audit-overview" },
+      element(
+        "div",
+        { className: "audit-overview-head" },
+        element("h3", { textContent: "What's left" }),
+        element("span", {
+          className: "audit-overview-count",
+          textContent: `${rowsLeft.length} to go · ${inPlan} already in your plan · ${rowsLeft.length - inPlan} not yet`,
+        }),
+      ),
+      element(
+        "ul",
+        { className: "audit-overview-list" },
+        ...rowsLeft.map((row) =>
+          element(
+            "li",
+            {},
+            element(
+              "button",
+              {
+                type: "button",
+                className: "audit-overview-row",
+                onclick: () =>
+                  document.getElementById(row.anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                disabled: !row.anchor,
+              },
+              element("span", { className: "audit-overview-title", textContent: row.title }),
+              element("span", { className: "audit-overview-needs", textContent: row.needs }),
+              row.cover ? coverageBadge(row.cover) : "",
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -374,13 +570,29 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       uploadBox(),
       message ? element("p", { className: "audit-message", role: "status", textContent: message }) : "",
     );
+    // With an audit, uploading a newer one is folded away (open when there's news about it).
+    const uploadArea = audit
+      ? element(
+          "details",
+          { className: "audit-upload-fold", open: Boolean(message) && !/^Read your audit/.test(message) },
+          element("summary", { textContent: "Upload a newer audit" }),
+          upload,
+        )
+      : upload;
     if (!audit) {
-      section.replaceChildren(intro, upload);
+      section.replaceChildren(intro, uploadArea);
       return;
     }
 
     const graph = getGraph();
+    const facts = courseFacts(rows);
     const taken = new Set([...audit.takenIds, ...myCourses.ids("taken")]);
+    // Each unfinished part (or "pick one" choice) gets an id, so the overview can scroll to it.
+    const anchors = new Map();
+    const anchorFor = (group) => {
+      if (!anchors.has(group[0])) anchors.set(group[0], `audit-item-${anchors.size + 1}`);
+      return anchors.get(group[0]);
+    };
     const open = audit.sections.filter((requirement) => !sectionIsMet(requirement));
     const met = audit.sections.filter(sectionIsMet);
     const program = [audit.programName, audit.program && `(${audit.program})`].filter(Boolean).join(" ");
@@ -420,7 +632,10 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           }),
         ),
       ),
-      upload,
+      message && /^Read your audit/.test(message)
+        ? element("p", { className: "audit-message", role: "status", textContent: message })
+        : "",
+      open.length > 0 ? overview(open, facts, anchorFor) : "",
       element(
         "p",
         { className: "audit-legend" },
@@ -433,14 +648,14 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
         ? element(
             "div",
             { className: "audit-sections" },
-            ...open.map((requirement) => sectionCard(requirement, graph, taken)),
+            ...open.map((requirement) => sectionCard(requirement, graph, taken, facts, anchorFor)),
           )
         : element("p", { className: "audit-all-done", textContent: "Every requirement on this audit is met. 🎉" }),
       met.length > 0
         ? element(
-            "section",
+            "details",
             { className: "audit-met" },
-            element("h3", { textContent: "Done" }),
+            element("summary", { textContent: `✓ ${met.length} requirement${met.length === 1 ? "" : "s"} done` }),
             element(
               "ul",
               {},
@@ -448,6 +663,7 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
             ),
           )
         : "",
+      uploadArea,
     );
   }
 

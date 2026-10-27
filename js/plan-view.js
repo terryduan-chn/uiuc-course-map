@@ -14,13 +14,15 @@ import {
   semesterLoad,
   SLOT_HOURS,
   slotKind,
+  slotKindsOf,
   slotNames,
   slotOptions,
   slotPart,
+  slotTitle,
 } from "./plan-insights.js";
 import { courseFacts, requirementCourses } from "./requirement-courses.js";
 import { creditHours, parseCourseCode, requirementLabel } from "./search.js";
-import { currentTerm, doneBefore, nextMainTerm, planSemesters, termLabel, termOrder } from "./terms.js";
+import { currentTerm, doneBy, nextMainTerm, planSemesters, termLabel, termOrder } from "./terms.js";
 
 /** The Fall or Spring the plan starts from by default: this one, or the next after a summer. */
 const currentMainTerm = () => (/^(FA|SP)/.test(currentTerm()) ? currentTerm() : nextMainTerm(currentTerm()));
@@ -105,9 +107,8 @@ export function createPlanView({ rows, element, getGraph }) {
   function courseDetails(id, term, info, graph, facts, courses) {
     const node = graph.byId.get(id);
     const fact = facts.get(id);
-    const before = term
-      ? doneBefore(courses, term)
-      : new Set(courses.filter((course) => course.id !== id).map((course) => course.id));
+    const { before, same } = doneBy(courses, term, id);
+    const counts = (group, prerequisite) => before.has(prerequisite) || (group.concurrent && same.has(prerequisite));
     const groups = node?.requirements ?? [];
     return element(
       "div",
@@ -130,7 +131,7 @@ export function createPlanView({ rows, element, getGraph }) {
             "ul",
             { className: "plan-prereqs" },
             ...groups.map((group) => {
-              const have = group.ids.filter((prerequisite) => before.has(prerequisite)).length;
+              const have = group.ids.filter((prerequisite) => counts(group, prerequisite)).length;
               const met = have >= group.required;
               return element(
                 "li",
@@ -212,6 +213,20 @@ export function createPlanView({ rows, element, getGraph }) {
       hours === null ? "" : element("span", { className: "plan-hours", textContent: `${hours} hr` }),
       why ? element("span", { className: "plan-reason", textContent: `· ${why}`, title: why }) : "",
     );
+    // The Gen Eds this course counts for: one course can meet two (Humanities and Western).
+    const genEds = slotKindsOf(facts.get(id)).map(slotKind);
+    const genEdLine =
+      genEds.length === 0
+        ? ""
+        : element(
+            "p",
+            {
+              className: "plan-geneds",
+              title: `Counts for ${genEds.map((kind) => kind.name).join(" and ")}`,
+            },
+            genEds.length > 1 ? "Gen Eds: " : "Gen Ed: ",
+            ...genEds.map((kind) => element("span", { className: "plan-gened", textContent: kind.short })),
+          );
     const controls = planControls({ element, rows, graph, id });
     return draggableCard(
       id,
@@ -219,6 +234,7 @@ export function createPlanView({ rows, element, getGraph }) {
       head,
       // A taken course has only ⋯, so it shares the line with its status and hours.
       status === "taken" ? element("div", { className: "plan-course-foot" }, meta, controls) : meta,
+      genEdLine,
       issueBadges(element, issues),
       open ? courseDetails(id, course.term, info, graph, facts, courses) : "",
       status === "taken" ? "" : controls,
@@ -228,12 +244,13 @@ export function createPlanView({ rows, element, getGraph }) {
   /** A Gen Ed slot: a "pick a course" placeholder with ← →, a list of courses to pick, and ✕. */
   function slotCard(slot, graph, facts, courses, slots) {
     const kind = slotKind(slot.kind);
+    const title = slotTitle(slot); // "Humanities & the Arts + Western/Comparative Cultures" for a shared slot
     const arrow = (direction) =>
       moveButton({
         element,
         direction,
         term: slot.term,
-        what: `the ${kind.name} slot`,
+        what: `the ${title} slot`,
         key: slot.id,
         move: (target) => myCourses.setSlotTerm(slot.id, target),
       });
@@ -245,7 +262,7 @@ export function createPlanView({ rows, element, getGraph }) {
         element("summary", {
           className: "plan-action plan-slot-pick",
           textContent: "Pick a course",
-          ariaLabel: `Pick a course for the ${kind.name} slot`,
+          ariaLabel: `Pick a course for the ${title} slot`,
         }),
         `pick-${slot.id}`,
       ),
@@ -254,7 +271,9 @@ export function createPlanView({ rows, element, getGraph }) {
     // The course list is looked up only when it opens (it searches every course with the Gen Ed).
     picker.addEventListener("toggle", () => {
       if (!picker.open || picks.childElementCount > 0) return;
-      const candidates = requirementCourses(rows, slotPart(kind), { genEdLimit: SLOT_CANDIDATES }).map(([id]) => id);
+      // A shared slot looks through every course of its main Gen Ed, so the ones meeting both are found.
+      const limit = slot.also.length > 0 ? undefined : SLOT_CANDIDATES;
+      const candidates = requirementCourses(rows, slotPart(kind), { genEdLimit: limit }).map(([id]) => id);
       const options = slotOptions({ slot, candidates, courses, slots, graph, facts });
       if (options.length === 0) {
         picks.append(element("p", { className: "plan-menu-label", textContent: "No recently offered courses found." }));
@@ -265,10 +284,20 @@ export function createPlanView({ rows, element, getGraph }) {
         option.covers.length === 0
           ? ""
           : `also ${option.covers.map((id) => slotKind(slots.find((other) => other.id === id).kind).name).join(", ")}`;
+      // In a shared slot, say when a course meets only some of its Gen Eds (the rest stay open).
+      const sharedText = (option) => {
+        if (slot.also.length === 0) return "";
+        const missed = slot.also.filter((other) => !option.meetsAlso.includes(other));
+        if (missed.length > 0) return `${slotNames(missed)} stays open`;
+        return slot.also.length === 1 ? "counts for both" : `counts for all ${slot.also.length + 1}`;
+      };
       picks.append(
         element("p", {
           className: "plan-menu-label",
-          textContent: "Best first: fits this semester, fills another slot too, then higher GPA.",
+          textContent:
+            slot.also.length > 0
+              ? "Best first: fits this semester, counts for every Gen Ed in this slot, then higher GPA."
+              : "Best first: fits this semester, fills another slot too, then higher GPA.",
         }),
         ...options.map((option) =>
           element(
@@ -276,7 +305,7 @@ export function createPlanView({ rows, element, getGraph }) {
             {
               type: "button",
               className: `plan-menu-item plan-slot-option ${option.ready ? "ready" : ""}`,
-              onclick: () => myCourses.fillSlot(slot.id, option.id, option.covers),
+              onclick: () => myCourses.fillSlot(slot.id, option.id, option.covers, slotKindsOf(facts.get(option.id))),
             },
             element("strong", { textContent: option.id }),
             element("span", { className: "plan-slot-option-title", textContent: info.get(option.id)?.title ?? "" }),
@@ -284,6 +313,7 @@ export function createPlanView({ rows, element, getGraph }) {
               className: "plan-slot-option-meta",
               textContent: [
                 option.gpa ? `${option.gpa.toFixed(2)} GPA` : "no grade data",
+                sharedText(option),
                 alsoText(option),
                 option.ready ? "" : "needs prerequisites or another season",
               ]
@@ -301,7 +331,7 @@ export function createPlanView({ rows, element, getGraph }) {
         "p",
         { className: "plan-slot-head" },
         element("span", { className: "code", textContent: "Gen Ed" }),
-        element("span", { className: "title", textContent: kind.name }),
+        element("span", { className: "title", textContent: title }),
       ),
       element(
         "p",
@@ -323,7 +353,7 @@ export function createPlanView({ rows, element, getGraph }) {
             className: "plan-action",
             textContent: "✕",
             title: "Remove this slot",
-            ariaLabel: `Remove the ${kind.name} slot`,
+            ariaLabel: `Remove the ${title} slot`,
             onclick: () => myCourses.removeSlot(slot.id),
           }),
           `remove-${slot.id}`,

@@ -173,12 +173,17 @@
     </li>
     <li><strong>Click a card</strong> to see its GPA, the seasons it runs, its prerequisites and what it unlocks.</li>
     <li>
+      <strong>Gen Ed tags</strong> under a course say which Gen Eds it counts for. One course can count for two, like
+      Humanities and Western Cultures.
+    </li>
+    <li>
       <strong>⋯</strong> picks a semester, marks the course taken or in progress, swaps it for another course meeting
       the same requirement, or removes it.
     </li>
     <li>
       <strong>Red badges</strong> point out problems: a prerequisite that isn't in an earlier semester, a semester the
-      course doesn't run in, or a course that hasn't been offered lately.
+      course doesn't run in, or a course that hasn't been offered lately. A prerequisite UIUC allows "credit or
+      concurrent registration" in may be in the same semester.
     </li>
     <li>Semesters say <em>light</em> under 12 hours and <em>heavy</em> over 18.</li>
   </ul>
@@ -222,6 +227,13 @@
     A Gen Ed slot is a dashed card that holds a place for a Gen Ed, like <em>Humanities &amp; the Arts</em>, until you
     pick the course. It counts as 3 hours and moves like a course.
   </p>
+  <p>
+    Some courses count for two Gen Eds at once: a Humanities or Social Science course that is also a Western,
+    Non-Western or U.S. Minority Cultures course. Auto-plan then makes one <strong>shared slot</strong>, like
+    <em>Humanities &amp; the Arts + Western/Comparative Cultures</em>, instead of two, which saves 3 hours. Its course
+    list puts courses that count for both first; pick one that counts for only one, and the other Gen Ed stays open as
+    its own slot.
+  </p>
   <ol>
     <li>
       Press <strong>Pick a course</strong> on a slot. Courses are listed best first: ones you can take that semester,
@@ -250,10 +262,21 @@
   <p>The Audit page then shows:</p>
   <ul>
     <li>
-      Each requirement still unmet, with the courses that count for it, colored by whether you've taken or planned them,
-      can take them now, or need prerequisites first.
+      <strong>What's left</strong> at the top: one line for each unfinished requirement, what it needs, and whether your
+      plan already covers it (<em>In your plan</em>, <em>Partly planned</em> or <em>Not planned yet</em>). Click a line
+      to jump to it.
+    </li>
+    <li>
+      Each unfinished requirement with the courses that count for it, best first, colored by whether you've planned
+      them, can take them now, or need prerequisites first. Courses you've taken are listed once as counted, and courses
+      not offered lately are left out.
+    </li>
+    <li>
+      For "pick one of these" requirements (like the CS focus areas), how far your plan gets with each option. The
+      closest one is marked and open.
     </li>
     <li>For Gen Eds, what your plan already holds for it: planned courses that count, and open slots.</li>
+    <li>Finished requirements and parts, folded away at the bottom.</li>
     <li><strong>Make a plan from this audit</strong>, which runs <a href="#docs/auto-plan">Auto-plan</a>.</li>
   </ul>
   <p>
@@ -308,6 +331,11 @@
     similar conditions that aren't courses.
   </p>
   <p>
+    When the sentence says "credit or concurrent registration in" a course, that course may be taken in the same
+    semester instead of before: CS 222 can be taken alongside CS 225, for example. The plan, its problem badges and
+    Auto-plan all allow that, and course pages say "can be taken at the same time".
+  </p>
+  <p>
     This reading is a best effort, so every course page also shows the official wording, which is the source of truth.
     The plan's problem badges, the star map and Auto-plan all use the requirement groups.
   </p>
@@ -328,9 +356,10 @@
     <span data-meta="oldest_term_searched">the oldest term</span>.
   </p>
   <p>
-    It then fills semesters in order. A course goes in the first semester where its prerequisites come earlier and it
-    runs that season, starting the longest chains of prerequisites first, with Gen Ed slots last. A semester holds about
-    15 hours; a course that runs in only one season may stretch it to 18 rather than wait a year.
+    It then fills semesters in order. A course goes in the first semester where its prerequisites come earlier (or in
+    the same semester, where concurrent registration is allowed) and it runs that season, starting the longest chains of
+    prerequisites first, with Gen Ed slots last. A semester holds about 15 hours; a course that runs in only one season
+    may stretch it to 18 rather than wait a year.
   </p>
 </section>
 

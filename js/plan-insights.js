@@ -5,19 +5,19 @@
 import { genEdCodesFor, partGroups, requirementSections, sectionIsMet, titleCase } from "./audit-reader.js";
 import { missingRequirements } from "./graph-data.js";
 import { requirementLabel } from "./search.js";
-import { doneBefore, nextMainTerm, termLabel, termOrder } from "./terms.js";
+import { doneBy, nextMainTerm, termLabel, termOrder } from "./terms.js";
 
-/** The kinds of Gen Ed slot a plan can hold, with the Gen Ed codes that fill each. */
+/** The kinds of Gen Ed slot a plan can hold, with the Gen Ed codes that fill each and a short name. */
 export const GEN_ED_SLOTS = [
-  { key: "HUM", name: "Humanities & the Arts", codes: ["1HP", "1LA"] },
-  { key: "SBS", name: "Social & Behavioral Sciences", codes: ["1BSC", "1SS"] },
-  { key: "NAT", name: "Natural Sciences & Technology", codes: ["1LS", "1PS"] },
-  { key: "QR", name: "Quantitative Reasoning", codes: ["1QR1", "1QR2"] },
-  { key: "QR2", name: "Quantitative Reasoning II", codes: ["1QR2"] },
-  { key: "WCC", name: "Western/Comparative Cultures", codes: ["1WCC"] },
-  { key: "NW", name: "Non-Western Cultures", codes: ["1NW"] },
-  { key: "US", name: "U.S. Minority Cultures", codes: ["1US"] },
-  { key: "COMP", name: "Advanced Composition", codes: ["1CLL"] },
+  { key: "HUM", name: "Humanities & the Arts", short: "Humanities", codes: ["1HP", "1LA"] },
+  { key: "SBS", name: "Social & Behavioral Sciences", short: "Social Sci", codes: ["1BSC", "1SS"] },
+  { key: "NAT", name: "Natural Sciences & Technology", short: "Natural Sci", codes: ["1LS", "1PS"] },
+  { key: "QR", name: "Quantitative Reasoning", short: "Quant", codes: ["1QR1", "1QR2"] },
+  { key: "QR2", name: "Quantitative Reasoning II", short: "Quant II", codes: ["1QR2"] },
+  { key: "WCC", name: "Western/Comparative Cultures", short: "Western", codes: ["1WCC"] },
+  { key: "NW", name: "Non-Western Cultures", short: "Non-Western", codes: ["1NW"] },
+  { key: "US", name: "U.S. Minority Cultures", short: "US Minority", codes: ["1US"] },
+  { key: "COMP", name: "Advanced Composition", short: "Adv Comp", codes: ["1CLL"] },
 ];
 export const SLOT_HOURS = 3; // a Gen Ed slot counts as a typical 3-hour course
 export const slotKind = (key) => GEN_ED_SLOTS.find((slot) => slot.key === key) ?? null;
@@ -34,6 +34,20 @@ export const slotNames = (kinds) =>
     .map((kind) => slotKind(kind)?.name)
     .filter(Boolean)
     .join(" + ");
+
+/**
+ * The Gen Ed slot kinds a course counts for, from its facts (["HUM", "WCC"]). Quantitative
+ * Reasoning II is left out when the course is listed as plain Quantitative Reasoning too.
+ */
+export function slotKindsOf(fact) {
+  const kinds = GEN_ED_SLOTS.filter((kind) => kind.codes.some((code) => fact?.genEds.has(code))).map(
+    (kind) => kind.key,
+  );
+  return kinds.includes("QR") ? kinds.filter((kind) => kind !== "QR2") : kinds;
+}
+
+/** A slot's Gen Eds in words: "Humanities & the Arts", or "Humanities & the Arts + Western/Comparative Cultures". */
+export const slotTitle = (slot) => slotNames([slot.kind, ...(slot.also ?? [])]);
 
 /** The slot kind a Gen Ed's name stands for ("Humanities & the Arts" -> its GEN_ED_SLOTS entry), or null. */
 export const slotKindNamed = (name) => GEN_ED_SLOTS.find((slot) => slot.name === name) ?? null;
@@ -93,15 +107,20 @@ export function courseIssues({ id, term, courses, graph, facts, offeredSince }) 
   if (term && fact?.offered && fact.seasons.size > 0 && /^(FA|SP)/.test(term) && !fact.seasons.has(term.slice(0, 2))) {
     issues.push({ kind: "season", text: `Runs ${seasonsText(fact.seasons)}, not ${termLabel(term).split(" ")[0]}` });
   }
-  const before = term
-    ? doneBefore(courses, term)
-    : new Set(courses.filter((course) => course.id !== id).map((course) => course.id));
-  const missing = missingRequirements(graph, id, before);
+  const { before, same } = doneBy(courses, term, id);
+  const missing = missingRequirements(graph, id, before, same);
   if (missing.length > 0) {
-    issues.push({
-      kind: "prereq",
-      text: `Needs ${describeMissing(missing)} ${term ? "in an earlier semester" : "first"}`,
-    });
+    // "Credit or concurrent registration" prerequisites may also be in the same semester.
+    const earlier = missing.filter((group) => !group.concurrent);
+    const sameOrEarlier = missing.filter((group) => group.concurrent);
+    const parts = [];
+    if (earlier.length) parts.push(`${describeMissing(earlier)} ${term ? "in an earlier semester" : "first"}`);
+    if (sameOrEarlier.length) {
+      parts.push(
+        `${describeMissing(sameOrEarlier)} ${term ? "this semester or earlier" : "first or at the same time"}`,
+      );
+    }
+    issues.push({ kind: "prereq", text: `Needs ${parts.join("; and ")}` });
   }
   return issues;
 }
@@ -145,15 +164,16 @@ export function degreeProgress({ courses, hoursOf, audit }) {
 
 /**
  * The first Fall or Spring from `startTerm` on where a course's prerequisites are done before
- * it and it runs that season (within four years), else `startTerm`.
+ * it (or alongside it, where concurrent registration is allowed) and it runs that season
+ * (within four years), else `startTerm`.
  */
 export function bestTerm({ id, courses, graph, facts, startTerm }) {
-  const others = courses.filter((course) => course.id !== id);
   const seasons = facts?.get(id)?.seasons ?? new Set();
   let term = startTerm;
   for (let step = 0; step < 8; step += 1) {
     const seasonOk = seasons.size === 0 || seasons.has(term.slice(0, 2));
-    if (seasonOk && missingRequirements(graph, id, doneBefore(others, term)).length === 0) return term;
+    const { before, same } = doneBy(courses, term, id);
+    if (seasonOk && missingRequirements(graph, id, before, same).length === 0) return term;
     term = nextMainTerm(term);
   }
   return startTerm;
@@ -178,14 +198,13 @@ export function requirementFor(audit, reason) {
  */
 export function swapOptions({ id, term, candidates, courses, graph, facts, fills = [], limit = 8 }) {
   const inPlan = new Set(courses.map((course) => course.id));
-  const others = courses.filter((course) => course.id !== id);
-  const before = term ? doneBefore(others, term) : new Set(others.map((course) => course.id));
+  const { before, same } = doneBy(courses, term, id);
   return candidates
     .filter((option) => option !== id && !inPlan.has(option) && facts?.get(option)?.offered)
     .map((option) => {
       const seasons = facts.get(option).seasons;
       const seasonOk = !term || seasons.size === 0 || seasons.has(term.slice(0, 2));
-      const ready = seasonOk && missingRequirements(graph, option, before).length === 0;
+      const ready = seasonOk && missingRequirements(graph, option, before, same).length === 0;
       const keeps = fills.filter((kind) => slotKind(kind)?.codes.some((code) => facts.get(option).genEds.has(code)));
       return { id: option, ready, keeps, gpa: facts.get(option).gpa };
     })
@@ -200,26 +219,31 @@ export function swapOptions({ id, term, candidates, courses, graph, facts, fills
 }
 
 /**
- * Courses to fill a Gen Ed slot with, best first: ones that can be taken in its semester, then
- * ones that also fill other open slots (like Humanities and Western at once), then higher GPA.
+ * Courses to fill a Gen Ed slot with, best first: ones that can be taken in its semester, then,
+ * for a shared slot, ones that meet all its Gen Eds, then ones that also fill other open slots
+ * (like Humanities and Western at once), then higher GPA.
  * `candidates` are course ids with the slot's Gen Eds; `slots` is every slot in the plan.
  * Each option lists the other slot ids it would also fill (at most one per kind).
  */
 export function slotOptions({ slot, candidates, courses, slots, graph, facts, limit = 10 }) {
   const inPlan = new Set(courses.map((course) => course.id));
-  const before = slot.term ? doneBefore(courses, slot.term) : inPlan;
-  const others = slots.filter((other) => other.id !== slot.id && other.kind !== slot.kind);
+  const { before, same } = doneBy(courses, slot.term);
+  const own = [slot.kind, ...(slot.also ?? [])];
+  const others = slots.filter((other) => other.id !== slot.id && !own.includes(other.kind));
   return candidates
     .filter((id) => !inPlan.has(id) && facts?.get(id)?.offered)
     .map((id) => {
       const fact = facts.get(id);
       const seasonOk = !slot.term || fact.seasons.size === 0 || fact.seasons.has(slot.term.slice(0, 2));
-      const ready = seasonOk && missingRequirements(graph, id, before).length === 0;
-      return { id, ready, covers: slotsFilledBy(fact, others).map((other) => other.id), gpa: fact.gpa };
+      const ready = seasonOk && missingRequirements(graph, id, before, same).length === 0;
+      // For a shared slot ("Humanities + Western"), which of its other Gen Eds the course meets too.
+      const meetsAlso = (slot.also ?? []).filter((kind) => slotKind(kind).codes.some((code) => fact.genEds.has(code)));
+      return { id, ready, meetsAlso, covers: slotsFilledBy(fact, others).map((other) => other.id), gpa: fact.gpa };
     })
     .sort(
       (a, b) =>
         Number(b.ready) - Number(a.ready) ||
+        b.meetsAlso.length - a.meetsAlso.length ||
         b.covers.length - a.covers.length ||
         (b.gpa ?? 0) - (a.gpa ?? 0) ||
         a.id.localeCompare(b.id),

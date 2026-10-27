@@ -17,7 +17,8 @@ function addToRequirement(node, link, prereq) {
   const index = link.group_index ?? node.requirements.length;
   node.groupByIndex ??= new Map();
   if (!node.groupByIndex.has(index)) {
-    const group = { required: link.required_count ?? 1, ids: [] };
+    // "Credit or concurrent registration in X": X may be taken in the same semester.
+    const group = { required: link.required_count ?? 1, ids: [], concurrent: Boolean(link.concurrent_ok) };
     node.groupByIndex.set(index, group);
     node.requirements.push(group);
   }
@@ -27,13 +28,14 @@ function addToRequirement(node, link, prereq) {
 
 /**
  * Builds the graph from prerequisite links.
- * @param {{ subject, number, prereq_subject, prereq_number, group_index?, required_count? }[]} links
+ * @param {{ subject, number, prereq_subject, prereq_number, group_index?, required_count?, concurrent_ok? }[]} links
  *   one per course → prerequisite, as stored in the prerequisites table
  * @param {Map<string, string>} titles course id → title; links to unknown courses are dropped
  * @returns {{ nodes: object[], links: object[], byId: Map<string, object> }}
  *   nodes: { id, subject, number, title, dependents, prerequisites, requirements }, where
  *   dependents and prerequisites are arrays of course ids and requirements lists the course's
- *   requirement groups as { required, ids }. links: { source, target } from prerequisite to course.
+ *   requirement groups as { required, ids, concurrent } (concurrent: its courses may be taken in
+ *   the same semester). links: { source, target } from prerequisite to course.
  */
 export function buildGraph(links, titles) {
   const byId = new Map();
@@ -157,14 +159,16 @@ export function matchCourses(graph, text, subjects = []) {
 
 /**
  * The requirement groups of a course that `done` (a Set of course ids) does not yet meet,
- * each as { required, ids, have } where `have` is how many of its courses are done.
- * An empty array means every prerequisite is met (or the course has none).
+ * each as { required, ids, concurrent, have } where `have` is how many of its courses count.
+ * `sameTerm` holds courses taken in the same semester: they count for groups that allow
+ * concurrent registration. An empty array means every prerequisite is met (or there are none).
  */
-export function missingRequirements(graph, id, done) {
+export function missingRequirements(graph, id, done, sameTerm = new Set()) {
   const node = graph.byId.get(id);
   if (!node) return [];
+  const counts = (group, prereq) => done.has(prereq) || (group.concurrent && sameTerm.has(prereq));
   return node.requirements
-    .map((group) => ({ ...group, have: group.ids.filter((prereq) => done.has(prereq)).length }))
+    .map((group) => ({ ...group, have: group.ids.filter((prereq) => counts(group, prereq)).length }))
     .filter((group) => group.have < group.required);
 }
 

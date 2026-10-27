@@ -448,8 +448,7 @@
   gap: 4px 12px;
 }
 
-.audit-section h3,
-.audit-met h3 {
+.audit-section h3 {
   margin: 0;
   font-size: 1.15rem;
 }
@@ -460,10 +459,22 @@
   font-weight: 600;
 }
 
+/* Finished parts of a requirement, folded: "✓ 2 parts done". */
 .audit-done-parts {
   margin: 6px 0 0;
   color: var(--taken);
   font-size: 0.88rem;
+}
+
+.audit-done-parts summary,
+.audit-met summary,
+.audit-upload-fold summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.audit-done-parts p {
+  margin: 4px 0 0;
 }
 
 .audit-items {
@@ -476,6 +487,7 @@
 }
 
 .audit-item {
+  scroll-margin-top: 84px; /* "What's left" scrolls here, below the sticky top bar */
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--ready);
@@ -547,27 +559,34 @@ a.audit-chip:hover {
   color: var(--muted);
 }
 
-.audit-more summary,
-.audit-choice summary {
+.audit-more summary {
   margin-top: 8px;
   color: var(--accent);
   font-size: 0.88rem;
   cursor: pointer;
 }
 
+/* A "pick one" option; the one the plan is closest to stands out. */
 .audit-choice {
   margin-top: 6px;
   padding: 4px 10px 8px;
+  border: 1px solid transparent;
   border-radius: 8px;
   background: var(--surface);
 }
 
+.audit-choice.closest {
+  border-color: var(--accent);
+}
+
 .audit-choice summary {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: inherit;
-  font-weight: 600;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
 }
 
 .audit-met ul {
@@ -1380,4 +1399,160 @@ button.plan-button:focus-visible {
 
 .plan-course-foot .plan-course-actions {
   margin-top: 0;
+}
+
+/* The Gen Eds a course on My plan counts for: small tags, two when one course meets two. */
+.plan-geneds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.plan-gened {
+  padding: 0 6px;
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---- Audit: "What's left" at the top, and how far the plan goes toward each requirement ---- */
+
+.audit-overview {
+  padding: 14px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+.audit-overview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.audit-overview h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.audit-overview-count {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.audit-overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audit-overview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audit-overview-row:hover:not(:disabled),
+.audit-overview-row:focus-visible {
+  background: var(--surface-raised);
+}
+
+.audit-overview-row:disabled {
+  cursor: default;
+}
+
+.audit-overview-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.audit-overview-needs {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.audit-cover {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.audit-cover.planned {
+  border-color: var(--taken);
+  color: var(--taken);
+}
+
+.audit-cover.partly {
+  border-color: var(--planned);
+  color: var(--planned);
+}
+
+.audit-cover.none {
+  color: var(--muted);
+}
+
+.audit-counted a {
+  color: var(--taken);
+  font-weight: 600;
+}
+
+.audit-old {
+  font-style: italic;
+}
+
+.audit-choice-title {
+  font-weight: 600;
+}
+
+.audit-closest {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.audit-upload-fold {
+  padding: 10px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+
+.audit-upload-fold[open] summary {
+  margin-bottom: 10px;
+}
+
+@media (max-width: 640px) {
+  .audit-overview-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .audit-overview-needs {
+    grid-column: 1;
+  }
 }

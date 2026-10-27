@@ -70,6 +70,20 @@ export function doneBefore(courses, term) {
 }
 
 /**
+ * What counts toward a course's prerequisites in a semester: `before`, the courses done before
+ * it (see doneBefore), and `same`, the other courses in that same semester (they meet
+ * "concurrent registration" prerequisites). With no term, everything else in the plan is before.
+ */
+export function doneBy(courses, term, exceptId = null) {
+  const others = courses.filter((course) => course.id !== exceptId);
+  if (!term) return { before: new Set(others.map((course) => course.id)), same: new Set() };
+  return {
+    before: doneBefore(others, term),
+    same: new Set(others.filter((course) => course.term === term).map((course) => course.id)),
+  };
+}
+
+/**
  * The semesters the plan shows: four years of Fall and Spring from Fall 2026 (or from the
  * earliest semester you have a course in), stretched to any later course, plus any
  * summer or winter you have courses in.

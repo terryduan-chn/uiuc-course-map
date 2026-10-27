@@ -18,13 +18,17 @@ import {
   titleCase,
 } from "./audit-reader.js";
 import { missingRequirements } from "./graph-data.js";
-import { SLOT_HOURS, slotKindFor } from "./plan-insights.js";
+import { SLOT_HOURS, slotKind, slotKindFor } from "./plan-insights.js";
 import { nextMainTerm, termOrder } from "./terms.js";
 
 export const TARGET_HOURS = 15; // a semester is full at about this many hours
 const MAX_HOURS = 18; // a course that runs only one season may stretch a semester this far
 const MAX_SEMESTERS = 16; // eight years, far more than any plan should need
 const PREREQUISITE_DEPTH = 6; // how far back a chain of prerequisites is followed
+// A cultural studies Gen Ed and a Humanities or Social Science one can share a course, so
+// Auto-plan gives them one slot when enough recently offered courses count for both.
+const SHARED_SLOTS = { WCC: ["HUM", "SBS"], NW: ["HUM", "SBS"], US: ["HUM", "SBS"] };
+const SHARED_MIN_COURSES = 3;
 
 /** A requirement the audit lists no courses for, met by Gen Ed courses (and they may also count elsewhere). */
 const isGenEdPart = (part) => part.selectFrom.length === 0 && genEdCodesFor(part.title).length > 0;
@@ -39,14 +43,15 @@ const isGenEdPart = (part) => part.selectFrom.length === 0 && genEdCodesFor(part
  * @param {{id: string, term: string|null}[]} input.planned the student's own planned courses
  * @param {string} input.startTerm the first semester to fill, e.g. "SP27"
  * @param {boolean} [input.genEdSlots] leave Gen Eds as "pick a course" slots instead of choosing courses
- * @param {{kind: string, term: string|null}[]} [input.slots] the student's own Gen Ed slots
+ * @param {{kind: string, also?: string[], term: string|null}[]} [input.slots] the student's own Gen Ed slots
  * @returns {{
  *   courses: {id: string, term: string, reason: string}[],
  *   scheduled: {id: string, term: string}[],
- *   slots: {kind: string, term: string, reason: string}[],
+ *   slots: {kind: string, also: string[], term: string, reason: string}[],
  *   open: {title: string, text: string}[],
  * }} new courses with a semester and why each is there; the student's unscheduled planned
- *   courses given a semester; new Gen Ed slots; requirements the plan can't fill by itself
+ *   courses given a semester; new Gen Ed slots (also: other Gen Eds the same course should
+ *   meet); requirements the plan can't fill by itself
  */
 export function buildAutoPlan({
   sections,
@@ -64,8 +69,10 @@ export function buildAutoPlan({
   const picked = new Map(); // new course id -> why it's in the plan
   const owner = new Map(); // course id -> the requirement section it counts for (Gen Eds can share)
   const genEdPicks = new Set(); // courses picked for a Gen Ed, scheduled after the major's chains
-  const newSlots = new Map(); // placeholder id ("slot:HUM:1") -> { kind, reason }
-  const ownSlots = slots.map((slot) => ({ ...slot, used: false }));
+  const newSlots = new Map(); // placeholder id ("slot:HUM:1") -> { kind, also, reason }
+  const slotNeeds = new Map(); // Gen Ed slot kind -> { count, reason }, turned into slots after every part
+  // The student's own slots, and which Gen Eds each has counted toward so far.
+  const ownSlots = slots.map((slot) => ({ ...slot, kinds: [slot.kind, ...(slot.also ?? [])], usedFor: new Set() }));
   const have = () => new Set([...taken, ...mine, ...picked.keys()]);
   const hoursOf = (id) => facts.get(id)?.hours ?? 3;
   const usable = (id) => Boolean(facts.get(id)?.offered) && !taken.has(id);
@@ -113,8 +120,9 @@ export function buildAutoPlan({
     if (slotKind) {
       const slotsNeeded = () =>
         Math.max(needCourses - courses, Math.ceil(Math.max(needHours - hours, 0) / SLOT_HOURS), 0);
-      for (const slot of ownSlots.filter((own) => own.kind === slotKind && !own.used).slice(0, slotsNeeded())) {
-        slot.used = true;
+      const ownOfKind = ownSlots.filter((own) => own.kinds.includes(slotKind) && !own.usedFor.has(slotKind));
+      for (const slot of ownOfKind.slice(0, slotsNeeded())) {
+        slot.usedFor.add(slotKind);
         courses += 1;
         hours += SLOT_HOURS;
       }
@@ -151,9 +159,7 @@ export function buildAutoPlan({
   }
 
   function commit(choice, sectionTitle, reason) {
-    for (let n = 0; n < (choice.slotCount ?? 0); n += 1) {
-      newSlots.set(`slot:${choice.slotKind}:${newSlots.size}`, { kind: choice.slotKind, reason });
-    }
+    if (choice.slotCount > 0) slotNeeds.set(choice.slotKind, { count: choice.slotCount, reason });
     for (const id of [...choice.counted, ...choice.chosen]) {
       if (!choice.genEd && !owner.has(id)) owner.set(id, sectionTitle);
       // A course first added as someone's prerequisite is really here for this requirement.
@@ -222,6 +228,35 @@ export function buildAutoPlan({
     }
   }
 
+  // ---- Gen Ed slots: one slot for two Gen Eds a single course can meet, then one per Gen Ed ----
+  const sharedCourses = (kindA, kindB) =>
+    [...facts.values()].filter(
+      (fact) =>
+        fact.offered &&
+        slotKind(kindA).codes.some((code) => fact.genEds.has(code)) &&
+        slotKind(kindB).codes.some((code) => fact.genEds.has(code)),
+    ).length;
+  for (const [cultural, partners] of Object.entries(SHARED_SLOTS)) {
+    for (const partner of partners) {
+      const a = slotNeeds.get(cultural);
+      const b = slotNeeds.get(partner);
+      if (!a?.count || !b?.count || sharedCourses(cultural, partner) < SHARED_MIN_COURSES) continue;
+      const shared = Math.min(a.count, b.count);
+      for (let n = 0; n < shared; n += 1) {
+        newSlots.set(`slot:${partner}+${cultural}:${newSlots.size}`, {
+          kind: partner,
+          also: [cultural],
+          reason: `${b.reason} + ${a.reason}`,
+        });
+      }
+      a.count -= shared;
+      b.count -= shared;
+    }
+  }
+  for (const [kind, { count, reason }] of slotNeeds) {
+    for (let n = 0; n < count; n += 1) newSlots.set(`slot:${kind}:${newSlots.size}`, { kind, also: [], reason });
+  }
+
   // ---- Semesters ----
   const semesters = [startTerm];
   while (semesters.length < MAX_SEMESTERS) semesters.push(nextMainTerm(semesters.at(-1)));
@@ -254,13 +289,23 @@ export function buildAutoPlan({
     return Boolean(term) && termOrder(term) < termOrder(semesters[index]);
   }
 
-  /** Every prerequisite group that the plan can meet is met before semester `index`. */
+  /** Whether a course is in semester `index` itself. */
+  function doneDuring(id, index) {
+    if (placed.has(id)) return placed.get(id) === index;
+    return fixedTerm.get(id) === semesters[index];
+  }
+
+  /**
+   * Every prerequisite group that the plan can meet is met before semester `index`, or during
+   * it for "concurrent registration" groups.
+   */
   function readyAt(id, index) {
     for (const group of graph.byId.get(id)?.requirements ?? []) {
       const inPlan = group.ids.filter((member) => universe.has(member));
       if (inPlan.length === 0) continue; // nothing in the plan can meet it (e.g. "consent of instructor")
       const needed = Math.min(group.required, inPlan.length);
-      if (inPlan.filter((member) => doneBefore(member, index)).length < needed) return false;
+      const met = (member) => doneBefore(member, index) || (group.concurrent && doneDuring(member, index));
+      if (inPlan.filter(met).length < needed) return false;
     }
     return true;
   }
@@ -280,26 +325,33 @@ export function buildAutoPlan({
   const priority = (a, b) => height(b) - height(a) || Number(genEdOnly(a)) - Number(genEdOnly(b)) || a.localeCompare(b);
 
   // Fill one semester at a time: of the courses whose prerequisites are done and that run that
-  // season, the ones starting the longest chains go first; Gen Eds fill what's left.
+  // season, the ones starting the longest chains go first; Gen Eds fill what's left. A course
+  // placed in a semester can make another ready in that same semester (concurrent
+  // registration), so each semester is filled again until nothing more fits.
   let waiting = [...toPlace];
   for (let index = 0; index < semesters.length && waiting.length > 0; index += 1) {
     const last = index === semesters.length - 1;
     const season = semesters[index].slice(0, 2);
-    const ready = waiting
-      .filter((id) => {
-        const seasons = facts.get(id)?.seasons ?? new Set();
-        return last || ((seasons.size === 0 || seasons.has(season)) && readyAt(id, index));
-      })
-      .sort(priority);
-    for (const id of ready) {
-      const hours = hoursOf(id);
-      // A course offered only in Fall or only in Spring would wait a whole year: let it stretch the semester.
-      const limit = (facts.get(id)?.seasons.size ?? 2) === 1 ? Math.max(targetHours, MAX_HOURS) : targetHours;
-      if (!last && load[index] > 0 && load[index] + hours > limit) continue;
-      placed.set(id, index);
-      load[index] += hours;
+    let placedSome = true;
+    while (placedSome && waiting.length > 0) {
+      placedSome = false;
+      const ready = waiting
+        .filter((id) => {
+          const seasons = facts.get(id)?.seasons ?? new Set();
+          return last || ((seasons.size === 0 || seasons.has(season)) && readyAt(id, index));
+        })
+        .sort(priority);
+      for (const id of ready) {
+        const hours = hoursOf(id);
+        // A course offered only in Fall or only in Spring would wait a whole year: let it stretch the semester.
+        const limit = (facts.get(id)?.seasons.size ?? 2) === 1 ? Math.max(targetHours, MAX_HOURS) : targetHours;
+        if (!last && load[index] > 0 && load[index] + hours > limit) continue;
+        placed.set(id, index);
+        load[index] += hours;
+        placedSome = true;
+      }
+      waiting = waiting.filter((id) => !placed.has(id));
     }
-    waiting = waiting.filter((id) => !placed.has(id));
   }
 
   // The plan's total hours, for requirements counted only in hours (like 128 in all).
@@ -328,7 +380,12 @@ export function buildAutoPlan({
     scheduled: planned
       .filter((course) => !course.term)
       .map((course) => ({ id: course.id, term: semesters[placed.get(course.id)] })),
-    slots: [...newSlots].map(([id, { kind, reason }]) => ({ kind, term: semesters[placed.get(id)], reason })),
+    slots: [...newSlots].map(([id, { kind, also, reason }]) => ({
+      kind,
+      also,
+      term: semesters[placed.get(id)],
+      reason,
+    })),
     open,
   };
 }

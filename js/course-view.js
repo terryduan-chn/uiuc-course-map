@@ -4,7 +4,15 @@
 import { missingRequirements } from "./graph-data.js";
 import { focusKey, myCourses } from "./my-courses.js";
 import { issueBadges, nextTerm, planControls, planCourses } from "./plan-controls.js";
-import { bestTerm, courseIssues, describeMissing, seasonsText, slotNames, slotsFilledBy } from "./plan-insights.js";
+import {
+  bestTerm,
+  courseIssues,
+  describeMissing,
+  seasonsText,
+  slotKindsOf,
+  slotNames,
+  slotsFilledBy,
+} from "./plan-insights.js";
 import { courseFacts } from "./requirement-courses.js";
 import {
   courseExplorerPage,
@@ -117,18 +125,25 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
           : ` · Best semester: ${semesterLabel(best)}, after its prerequisites${fact?.seasons.size === 1 ? " and in its season" : ""}`;
       // A Gen Ed course can fill open Gen Ed slots in the plan (one of each kind it counts for).
       const [slot, ...alsoFills] = slotsFilledBy(fact, myCourses.slots());
+      const courseKinds = slotKindsOf(fact);
+      // The Gen Eds of those slots this course meets (a shared slot's other Gen Ed may stay open).
+      const meets = [slot, ...alsoFills]
+        .filter(Boolean)
+        .flatMap((open) => [open.kind, ...open.also])
+        .filter((kind) => courseKinds.includes(kind));
       const slotButton = slot
         ? focusKey(
             element("button", {
               type: "button",
               className: "btn btn-ghost my-course-slot",
-              textContent: `Use for my ${slotNames([slot, ...alsoFills].map((open) => open.kind))} slot${alsoFills.length ? "s" : ""}${slot.term ? ` · ${semesterLabel(slot.term)}` : ""}`,
+              textContent: `Use for my ${slotNames(meets)} slot${alsoFills.length ? "s" : ""}${slot.term ? ` · ${semesterLabel(slot.term)}` : ""}`,
               title: "Puts it in the plan where the slot is, and the slot goes away",
               onclick: () =>
                 myCourses.fillSlot(
                   slot.id,
                   id,
                   alsoFills.map((open) => open.id),
+                  courseKinds,
                 ),
             }),
             `mark-planned-${id}`,

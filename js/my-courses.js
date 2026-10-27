@@ -36,9 +36,11 @@ function entry(status, term, hours, { auto = false, reason = null, kind = null, 
 }
 
 /** A Gen Ed slot: which Gen Ed it's for, its term, and whether Auto-plan added it (and why). */
-function slotEntry({ kind, term, auto = false, reason = null }) {
+function slotEntry({ kind, also = [], term, auto = false, reason = null }) {
   return {
     kind,
+    // Other Gen Eds the same course should also meet (one course for "Humanities + Western").
+    also: Array.isArray(also) ? [...new Set(also.filter((other) => SLOT_KINDS.has(other) && other !== kind))] : [],
     term: isTerm(term) ? term : null,
     auto: auto === true,
     reason: typeof reason === "string" ? reason.slice(0, 120) : null,
@@ -241,13 +243,23 @@ export const myCourses = {
   /**
    * Fills a slot with a course: the course is planned in the slot's term and the slot goes away,
    * along with `alsoCovers` (other slot ids the same course meets, like Humanities and Western).
+   * `courseKinds` are the Gen Ed kinds the course counts for: a shared slot's Gen Ed the course
+   * doesn't meet stays open as a slot of its own. Without it, the course is taken to meet them all.
    */
-  fillSlot(id, courseId, alsoCovers = []) {
+  fillSlot(id, courseId, alsoCovers = [], courseKinds = null) {
     const slot = slots.get(id);
     if (!slot || !COURSE_ID.test(courseId)) return;
     if (entries.has(courseId)) return;
-    const fills = [id, ...alsoCovers].map((other) => slots.get(other)?.kind).filter(Boolean);
-    for (const other of [id, ...alsoCovers]) slots.delete(other);
+    const fills = [];
+    for (const other of [id, ...alsoCovers]) {
+      const filled = slots.get(other);
+      if (!filled) continue;
+      for (const kind of [filled.kind, ...filled.also]) {
+        if (!courseKinds || courseKinds.includes(kind) || kind === slot.kind) fills.push(kind);
+        else slots.set(`slot-${nextSlot++}`, slotEntry({ kind, term: filled.term }));
+      }
+      slots.delete(other);
+    }
     entries.set(courseId, entry("planned", slot.term, null, { reason: slotKind(slot.kind).name, fills }));
     save();
   },
@@ -260,7 +272,9 @@ export const myCourses = {
     const saved = entries.get(id);
     if (!saved?.fills) return;
     entries.delete(id);
-    for (const kind of saved.fills) slots.set(`slot-${nextSlot++}`, slotEntry({ kind, term: saved.term }));
+    // One course met them all, so one slot holds them again.
+    const [kind, ...also] = saved.fills;
+    slots.set(`slot-${nextSlot++}`, slotEntry({ kind, also, term: saved.term }));
     save();
   },
 

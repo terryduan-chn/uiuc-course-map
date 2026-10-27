@@ -51,7 +51,7 @@ export function createGraphView({ rows, element }) {
     );
     graph = buildGraph(
       rows(
-        `SELECT subject, number, prereq_subject, prereq_number, group_index, required_count
+        `SELECT subject, number, prereq_subject, prereq_number, group_index, required_count, concurrent_ok
          FROM prerequisites ORDER BY rowid`,
       ),
       titles,
