@@ -1,0 +1,1383 @@
+/* Everything about your own courses: taken / planned marks, My plan, the Audit page and the
+   "+ Plan" buttons. Loaded after style.css, whose theme colors (--taken, --planned, ...) it uses. */
+
+/* ---- My courses: taken (green) and planned (blue) ---- */
+
+/* The plan box on a course page: a row of controls, then hints and checks underneath. */
+.my-course {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.my-course-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.my-course-row .plan-course-actions {
+  margin-top: 0;
+}
+
+.my-course-row .my-course-plan {
+  margin-left: auto;
+}
+
+.my-course-term {
+  font-weight: 650;
+}
+
+.my-course-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.my-course .plan-badges {
+  margin: 0;
+}
+
+.my-course-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.my-course-toggle button[aria-pressed="true"]:first-child {
+  background: var(--taken);
+  color: #06210f;
+}
+
+.my-course-toggle button[aria-pressed="true"]:last-child {
+  background: var(--planned);
+  color: #071a33;
+}
+
+.detail a.my-course-plan {
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.prereq-check {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.prereq-check.met {
+  color: var(--taken);
+  font-weight: 600;
+}
+
+.prereq-check.unmet {
+  color: var(--ready);
+  font-weight: 600;
+}
+
+.detail .chip.taken {
+  box-shadow: inset 0 0 0 1.5px var(--taken);
+}
+
+.detail .chip.planned {
+  box-shadow: inset 0 0 0 1.5px var(--planned);
+}
+
+/* ---- The #plan page ---- */
+
+.plan-view {
+  animation: rise-in 0.35s var(--ease) both;
+}
+
+.plan-header h2 {
+  margin: 8px 0 4px;
+  font-size: 1.8rem;
+}
+
+.plan-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-add-input {
+  flex: 1 1 180px;
+  height: var(--control);
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.plan-add-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+/* The add box's buttons share one row. */
+.plan-add .btn {
+  flex: 1 1 auto;
+  height: var(--control);
+}
+
+.plan-add-message {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+/* One card per semester, wrapping into rows: a four-year plan reads left to right. */
+.plan-semesters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.plan-semester,
+.plan-ready {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.plan-semester.past {
+  opacity: 0.85;
+}
+
+.plan-semester.now {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.plan-semester h3,
+.plan-ready h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.plan-now {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.plan-ready-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.plan-status {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.plan-status.taken {
+  color: var(--taken);
+}
+
+.plan-status.planned {
+  color: var(--planned);
+}
+
+.term-menu {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.term-menu:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-course {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  animation: rise-in 0.3s var(--ease) both;
+}
+
+.plan-course.taken {
+  border-left-color: var(--taken);
+}
+
+.plan-course.planned {
+  border-left-color: var(--planned);
+}
+
+.plan-course.ready {
+  border-left-color: var(--ready);
+}
+
+.plan-course-link {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.plan-course-link .code {
+  color: var(--highlight);
+  font-weight: 700;
+}
+
+.plan-course-link .title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.92rem;
+}
+
+.plan-course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.plan-hours {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.plan-action {
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.plan-action:hover {
+  border-color: var(--accent);
+}
+
+.plan-action.remove {
+  padding-inline: 8px;
+  color: var(--muted);
+}
+
+.plan-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* ---- The #audit page ---- */
+
+.audit-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: rise-in 0.35s var(--ease) both;
+}
+
+.audit-header h2 {
+  margin: 8px 0 4px;
+  font-size: 1.8rem;
+}
+
+.audit-lead {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.audit-privacy {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--taken) 40%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--taken) 10%, transparent);
+  font-size: 0.9rem;
+}
+
+.audit-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+
+.audit-steps {
+  flex: 1 1 320px;
+  margin: 0;
+  padding-left: 1.3em;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.audit-drop {
+  position: relative;
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 20px;
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.audit-drop:hover,
+.audit-drop.dragging,
+.audit-drop:focus-within {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.audit-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.audit-drop-title {
+  font-weight: 650;
+}
+
+.audit-drop-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.audit-message {
+  flex-basis: 100%;
+  margin: 0;
+  font-weight: 600;
+}
+
+.audit-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.audit-summary span {
+  color: var(--muted);
+}
+
+.audit-summary p {
+  margin: 4px 0 0;
+}
+
+.audit-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.audit-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.audit-section,
+.audit-met {
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.audit-section-head,
+.audit-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.audit-section h3,
+.audit-met h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.audit-needs {
+  color: var(--ready);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.audit-done-parts {
+  margin: 6px 0 0;
+  color: var(--taken);
+  font-size: 0.88rem;
+}
+
+.audit-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audit-item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ready);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+/* Audit text can hold a long address with no spaces: wrap it instead of widening the page. */
+.audit-item h4 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.audit-hint,
+.audit-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.audit-note {
+  font-style: italic;
+}
+
+.audit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.audit-chip {
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
+}
+
+a.audit-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+}
+
+.audit-chip.taken {
+  border-color: var(--taken);
+  color: var(--taken);
+}
+
+.audit-chip.planned {
+  border-color: var(--planned);
+  color: var(--planned);
+}
+
+.audit-chip.ready {
+  border-color: color-mix(in srgb, var(--ready) 70%, transparent);
+  background: color-mix(in srgb, var(--ready) 14%, transparent);
+}
+
+.audit-chip.later {
+  color: var(--muted);
+}
+
+.audit-more summary,
+.audit-choice summary {
+  margin-top: 8px;
+  color: var(--accent);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.audit-choice {
+  margin-top: 6px;
+  padding: 4px 10px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.audit-choice summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: inherit;
+  font-weight: 600;
+}
+
+.audit-met ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 0;
+  padding: 0;
+  color: var(--taken);
+  list-style: none;
+}
+
+.audit-all-done {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+/* ---- "+ Plan" buttons on course cards, the course page and the star map card ---- */
+
+.plan-button {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.15s;
+}
+
+button.plan-button:hover,
+button.plan-button:focus-visible {
+  border-color: var(--planned);
+  transform: translateY(-1px);
+}
+
+.plan-button.planned {
+  border-color: var(--planned);
+  background: color-mix(in srgb, var(--planned) 16%, transparent);
+  color: var(--planned);
+}
+
+.plan-button.taken {
+  border-color: var(--taken);
+  color: var(--taken);
+  cursor: default;
+}
+
+/* On a course card the button sits in the top-right corner, over the link. */
+.result-item {
+  position: relative;
+}
+
+.plan-button.on-card {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+
+/* ---- Dragging courses between semesters ---- */
+
+.plan-course[draggable="true"] {
+  cursor: grab;
+}
+
+.plan-course.dragging {
+  opacity: 0.4;
+}
+
+.drag-active .plan-semester {
+  border-style: dashed;
+}
+
+.plan-semester.drop-here {
+  border-color: var(--planned);
+  background: color-mix(in srgb, var(--planned) 12%, var(--surface));
+}
+
+.plan-drop-hint {
+  margin: 0;
+  padding: 18px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Text people type (a search, a course code) can be one long word: wrap it instead of widening the page. */
+.status,
+.graph-status,
+.plan-add-message,
+.audit-message {
+  overflow-wrap: anywhere;
+}
+
+.star-link-none {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* 2D star map cards for your own courses, colored like their planets. */
+.brief-card.mark-taken {
+  border-left: 3px solid var(--taken);
+}
+
+.brief-card.mark-planned {
+  border-left: 3px solid var(--planned);
+}
+
+.brief-card.mark-ready {
+  border-left: 3px solid var(--ready);
+}
+
+/* ---- My plan: the add box and the Auto-plan box, side by side (stacked on narrow screens) ---- */
+
+.plan-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.plan-add-panel,
+.plan-auto-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.plan-add-panel h3,
+.plan-auto-panel h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.plan-auto-panel {
+  border-color: color-mix(in srgb, var(--planned) 45%, var(--border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--planned) 10%, var(--surface)), var(--surface));
+}
+
+.plan-auto-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.plan-auto-source {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.plan-auto-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto; /* buttons line up with the add box's bottom */
+}
+
+.plan-auto-panel .btn {
+  align-self: flex-start;
+}
+
+/* What the latest Auto-plan did. */
+.plan-result {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, var(--planned) 45%, var(--border));
+  border-left: 4px solid var(--planned);
+  border-radius: 12px;
+  background: var(--surface);
+  animation: rise-in 0.3s var(--ease) both;
+}
+
+.plan-result p {
+  margin: 0;
+}
+
+.plan-result-lead {
+  font-weight: 600;
+}
+
+.plan-result-sub {
+  margin-top: 10px !important;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.plan-result ul {
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.plan-result-note {
+  margin-top: 10px !important;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* A course Auto-plan added: a dashed edge, a small tag, and why it's there. */
+.plan-course.auto {
+  border-left-style: dashed;
+}
+
+.plan-auto {
+  padding: 0 6px;
+  border: 1px solid var(--planned);
+  border-radius: 999px;
+  color: var(--planned);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Status, auto tag, hours and reason on one line; the reason is cut short with "…" (full text on hover). */
+.plan-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+}
+
+.plan-meta > span {
+  flex: none;
+}
+
+.plan-meta .plan-hours {
+  margin-right: 0;
+  color: var(--muted);
+}
+
+.plan-meta .plan-reason {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-semester .plan-course-actions {
+  flex-wrap: nowrap; /* menu, move and remove stay on one row; the menu gives up width first */
+}
+
+.plan-course-actions .term-menu {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.audit-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Taken courses in a semester: compact chips; the full cards fold out under "Edit". */
+.plan-taken {
+  margin-bottom: 10px;
+}
+
+.plan-taken-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-taken-chip {
+  display: inline-block;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--taken) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--taken) 12%, transparent);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.plan-taken-chip:hover {
+  border-color: var(--taken);
+}
+
+.plan-taken-edit summary {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.plan-taken-edit[open] .plan-list {
+  margin-top: 8px;
+}
+
+/* ---- My plan: help line, progress, semester health, richer course cards ---- */
+
+.plan-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.plan-key {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.plan-key.taken {
+  border-color: var(--taken);
+  color: var(--taken);
+}
+
+.plan-key.planned {
+  border-color: var(--planned);
+  color: var(--planned);
+}
+
+.plan-key.auto {
+  border-style: dashed;
+  border-color: var(--planned);
+  color: var(--planned);
+}
+
+.plan-key.problem {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.plan-progress {
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.plan-progress-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  font-size: 0.95rem;
+}
+
+.plan-progress-numbers strong {
+  font-size: 1.35rem;
+}
+
+.plan-progress-numbers span:nth-child(1) strong {
+  color: var(--taken);
+}
+
+.plan-progress-numbers span:nth-child(2) strong {
+  color: var(--planned);
+}
+
+.plan-progress-numbers .short strong {
+  color: var(--ready);
+}
+
+.plan-progress-total {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.plan-progress-bar {
+  display: flex;
+  height: 10px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 22%, transparent);
+}
+
+.plan-progress-bar .earned {
+  background: var(--taken);
+}
+
+.plan-progress-bar .planned {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--planned) 0 6px,
+    color-mix(in srgb, var(--planned) 70%, transparent) 6px 12px
+  );
+}
+
+.plan-progress-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.plan-progress-note strong {
+  color: var(--text);
+}
+
+/* Semester header: hours colored by load, and a count of problems. */
+.plan-load {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 16%, transparent);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.plan-load.light {
+  background: color-mix(in srgb, var(--ready) 18%, transparent);
+  color: var(--ready);
+}
+
+.plan-load.heavy {
+  background: color-mix(in srgb, var(--error) 20%, transparent);
+  color: var(--error);
+}
+
+.plan-problems {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--error) 18%, transparent);
+  color: var(--error);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* A course card's head is a button: click to open its details. */
+.plan-course-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-course-head .code {
+  color: var(--highlight);
+  font-weight: 700;
+}
+
+.plan-course-head .title {
+  grid-column: 1;
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--muted);
+}
+
+.plan-course-head:hover .code,
+.plan-course-head:focus-visible .code {
+  text-decoration: underline;
+}
+
+.plan-course.has-issues {
+  border-left-color: var(--error);
+}
+
+.plan-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-badge {
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--error) 14%, transparent);
+  color: var(--error);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.plan-badge.season,
+.plan-badge.stale {
+  background: color-mix(in srgb, var(--ready) 16%, transparent);
+  color: var(--ready);
+}
+
+.plan-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 0.84rem;
+  animation: rise-in 0.2s var(--ease) both;
+}
+
+.plan-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  margin: 0 0 6px;
+}
+
+.plan-facts dt {
+  color: var(--muted);
+}
+
+.plan-facts dd {
+  margin: 0;
+}
+
+.plan-details-label {
+  margin: 6px 0 2px;
+  color: var(--muted);
+}
+
+.plan-prereqs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-prereqs li {
+  margin: 2px 0;
+}
+
+.plan-prereq-mark {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: 800;
+}
+
+.plan-prereqs .met .plan-prereq-mark {
+  color: var(--taken);
+}
+
+.plan-prereqs .unmet .plan-prereq-mark {
+  color: var(--error);
+}
+
+.plan-details a {
+  color: var(--accent);
+}
+
+.plan-details a.done {
+  color: var(--taken);
+}
+
+.plan-unlocks {
+  margin: 6px 0 0;
+}
+
+.plan-details-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+/* ← → on the left, ⋯ on the right. */
+.plan-actions-gap {
+  flex: 1;
+}
+
+.plan-arrow {
+  min-width: 30px;
+}
+
+.plan-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.plan-menu {
+  position: relative;
+}
+
+.plan-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.plan-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-menu-panel {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 240px;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--popover, var(--surface-raised));
+  box-shadow: var(--shadow, 0 12px 30px rgb(0 0 0 / 0.35));
+  animation: rise-in 0.15s var(--ease) both;
+}
+
+.plan-menu-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.plan-menu-item {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-menu-item:hover,
+.plan-menu-item:focus-visible {
+  border-color: var(--accent);
+}
+
+.plan-menu-item.remove {
+  color: var(--error);
+}
+
+.plan-menu-item.swap.ready {
+  border-color: color-mix(in srgb, var(--taken) 50%, var(--border));
+}
+
+.plan-swap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan-swap:empty {
+  display: none;
+}
+
+/* Each card animates in on its own layer, so the card (and semester) with an open menu is lifted above the rest. */
+.plan-course:has(.plan-menu[open]),
+.plan-semester:has(.plan-menu[open]),
+.my-course:has(.plan-menu[open]) {
+  position: relative;
+  z-index: 30;
+}
+
+/* A course you're registered for this semester. */
+.plan-status.registered {
+  color: var(--taken);
+}
+
+/* AP, proficiency and transfer credit, kept out of every semester's load. */
+.plan-semester.credit {
+  border-style: dashed;
+}
+
+.plan-credit-note {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* A Gen Ed slot: a dashed placeholder you pick a course for later. */
+.plan-course.plan-slot {
+  position: relative;
+  border-style: dashed;
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-raised));
+}
+
+.plan-slot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.plan-slot-head .code {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plan-slot-head .title {
+  font-weight: 600;
+}
+
+.plan-slot-pick {
+  width: auto;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+/* The course list spans the slot card (positioned above), so it never runs off the screen. */
+.plan-slot .plan-slot-picker {
+  position: static;
+}
+
+.plan-slot-picker .plan-menu-panel {
+  left: 0;
+  width: auto;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.plan-slot-picks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plan-slot-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-slot-option-title {
+  font-size: 0.82rem;
+}
+
+.plan-slot-option-meta {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.plan-key.slot {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.plan-add-slot {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-add-slot-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* On the audit page: what the plan already holds for a Gen Ed (planned courses, open slots). */
+.audit-plan-note {
+  padding: 6px 10px;
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  color: var(--text);
+}
+
+/* An empty add-box message takes no room. */
+.plan-add-message:empty {
+  display: none;
+}
+
+/* A taken course's status, hours and ⋯ on one line. */
+.plan-course-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plan-course-foot .plan-course-actions {
+  margin-top: 0;
+}

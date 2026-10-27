@@ -1,0 +1,393 @@
+<!--
+  The Docs page's content, loaded by docs-view.js the first time Docs opens.
+  Each <section data-group> is one entry in the table of contents, reachable at #docs/<id>.
+  Elements with data-meta are filled in from the course database (import date, catalog range).
+-->
+
+<section id="getting-started" data-group="Start here">
+  <h2>Getting started</h2>
+  <p>
+    UIUC Course Map shows every UIUC course with its official description, prerequisites, average GPA and the semesters
+    it runs, and helps you plan the rest of your degree semester by semester. Every course comes from the official
+    Course Explorer feed; nothing is typed in by hand.
+  </p>
+  <p>You can use it three ways, in any order:</p>
+  <ul>
+    <li><strong>Look things up:</strong> find a course and see what it needs and what it leads to.</li>
+    <li><strong>Mark your courses:</strong> what you've taken, what you're taking now, and what you plan to take.</li>
+    <li>
+      <strong>Plan your degree:</strong> upload your degree audit and let Auto-plan lay out the semesters, then adjust
+      them.
+    </li>
+  </ul>
+  <p class="docs-note">
+    The app needs no account. Everything you mark stays in this browser (see <a href="#docs/your-data">Your data</a>).
+  </p>
+  <figure>
+    <img
+      src="docs-img/home.webp"
+      width="1280"
+      height="800"
+      alt="The home page: search box, counters and a small 3D map of one course"
+      loading="lazy"
+    />
+    <figcaption>The home page. Search from the box, or press Explore the star map.</figcaption>
+  </figure>
+</section>
+
+<section id="find-courses" data-group="Using the app">
+  <h2>Find a course</h2>
+  <ol>
+    <li>
+      Open <strong>Courses</strong> in the top bar and type in the search box. A code works with or without the space
+      (<em>CS 225</em>, <em>cs225</em>), and so do words from the title (<em>linear algebra</em>).
+    </li>
+    <li>
+      Or browse: pick a subject on the home page (the box above the subjects filters them, e.g. <em>comp sci</em>), then
+      use <strong>Jump to</strong> to go to a course number or a level (100, 200, …).
+    </li>
+    <li><strong>Cards</strong> / <strong>List</strong> switches how the courses are laid out.</li>
+  </ol>
+  <p>
+    Every course card has <strong>+ Plan</strong>, which adds it to next semester in one press. A course you've already
+    marked shows its status instead: <em>✓ Taken</em>, <em>In progress</em>, <em>✓ Credit</em> or its planned semester.
+  </p>
+</section>
+
+<section id="gen-eds" data-group="Using the app">
+  <h2>Find Gen Eds</h2>
+  <ol>
+    <li>Open the <strong>Gen Ed</strong> menu under the search box and pick one or more requirements.</li>
+    <li>
+      The list shows courses that meet <em>all</em> of them, highest average GPA first. Picking two (for example
+      Humanities and Western Cultures) finds courses that count for both at once.
+    </li>
+    <li>Type in the search box too, to narrow the list further.</li>
+  </ol>
+  <p>On a course page, each Gen Ed tag is a button: press it to see every course that meets the same Gen Ed.</p>
+</section>
+
+<section id="course-pages" data-group="Using the app">
+  <h2>Course pages</h2>
+  <p>Open any course to see:</p>
+  <ul>
+    <li>
+      <strong>Average GPA</strong>, the share of students who got a 4.0, and when it is offered next or was last
+      offered.
+    </li>
+    <li>
+      <strong>Prerequisites</strong>, as requirements: each one is either <em>Required</em> or
+      <em>Choose k of n</em> courses, with every course a link. Below them is the official wording, exactly as UIUC
+      wrote it.
+    </li>
+    <li><strong>Description</strong>, registration notes (restrictions, fees) and the semesters it ran.</li>
+    <li><strong>Open in star map</strong>, to see the course among everything it needs and unlocks.</li>
+  </ul>
+  <p>
+    The box under the title marks the course for you: <strong>+ Add to plan</strong> (with the best semester picked for
+    you), <strong>I've taken it</strong> or <strong>I'm taking it now</strong>. See
+    <a href="#docs/mark-courses">Mark your courses</a>.
+  </p>
+  <figure>
+    <img src="docs-img/course.webp" width="1280" height="800" alt="The CS 225 course page" loading="lazy" />
+    <figcaption>A course page: stats, the marking box, prerequisites and description.</figcaption>
+  </figure>
+</section>
+
+<section id="star-map" data-group="Using the app">
+  <h2>Star map</h2>
+  <p>
+    The star map shows every course that has a prerequisite link as a planet. Bigger planets are needed by more courses;
+    colors are subjects.
+  </p>
+  <ol>
+    <li>Drag to turn, scroll to zoom, and click a planet to open it.</li>
+    <li>
+      Or type in the map's search box: a code (<em>CS 225</em>), a subject (<em>MATH</em>), the start of a number (<em
+        >CS 4</em
+      >) or title words. The subject menu narrows the map to some subjects.
+    </li>
+    <li>
+      With a course open, <strong>gold</strong> links are what it needs and <strong>blue</strong> links are what it
+      unlocks. <strong>← Back to map</strong> returns to the whole map.
+    </li>
+    <li><strong>2D</strong> shows the same course as columns: two steps before, the course, two steps after.</li>
+    <li><strong>My courses</strong> colors the planets you've taken, planned, or can take next.</li>
+  </ol>
+  <figure>
+    <img
+      src="docs-img/star-map.webp"
+      width="1280"
+      height="800"
+      alt="The star map focused on CS 225 with its links lit"
+      loading="lazy"
+    />
+    <figcaption>The star map with CS 225 open: what it needs, and what it unlocks.</figcaption>
+  </figure>
+</section>
+
+<section id="mark-courses" data-group="Using the app">
+  <h2>Mark your courses</h2>
+  <p>A course can be marked in four ways:</p>
+  <dl>
+    <dt>Taken</dt>
+    <dd>You've finished it. Press <strong>I've taken it</strong> on its page.</dd>
+    <dt>In progress</dt>
+    <dd>
+      You're taking it this semester. Press <strong>I'm taking it now</strong> on its page, or
+      <strong>Add as in progress</strong> on My plan. It counts as taken for prerequisites.
+    </dd>
+    <dt>Credit before UIUC</dt>
+    <dd>AP, proficiency or transfer credit. This comes from your degree audit.</dd>
+    <dt>Planned</dt>
+    <dd>
+      You plan to take it in a semester. Press <strong>+ Add to plan</strong> on its page, or <strong>+ Plan</strong> on
+      its card.
+    </dd>
+  </dl>
+  <p>
+    To unmark a course, press its lit <strong>Taken</strong> or <strong>Planned</strong> button again, or choose
+    <strong>Remove from plan</strong> in its <strong>⋯</strong> menu. Uploading your
+    <a href="#docs/degree-audit">degree audit</a> marks all your past and current courses at once.
+  </p>
+</section>
+
+<section id="my-plan" data-group="Using the app">
+  <h2>My plan</h2>
+  <p>
+    <strong>My plan</strong> lays your courses out by semester: four years of Fall and Spring from this semester, longer
+    if your courses need it.
+  </p>
+  <ul>
+    <li>
+      <strong>Progress bar:</strong> hours earned, planned, and still to plan, out of what your degree needs (from your
+      audit, or 120 hours without one).
+    </li>
+    <li>
+      <strong>This semester</strong> shows the courses you're taking, marked <em>In progress</em>.
+      <strong>Credit before UIUC</strong> gets its own card, so no semester counts it.
+    </li>
+    <li>
+      <strong>Move a course:</strong> drag its card to another semester, or use <strong>←</strong> and
+      <strong>→</strong>.
+    </li>
+    <li><strong>Click a card</strong> to see its GPA, the seasons it runs, its prerequisites and what it unlocks.</li>
+    <li>
+      <strong>⋯</strong> picks a semester, marks the course taken or in progress, swaps it for another course meeting
+      the same requirement, or removes it.
+    </li>
+    <li>
+      <strong>Red badges</strong> point out problems: a prerequisite that isn't in an earlier semester, a semester the
+      course doesn't run in, or a course that hasn't been offered lately.
+    </li>
+    <li>Semesters say <em>light</em> under 12 hours and <em>heavy</em> over 18.</li>
+  </ul>
+  <p>
+    <strong>Add a course</strong> adds by code, as planned (in the semester you choose), in progress, or taken.
+    <strong>Ready to take next</strong> at the bottom lists courses whose prerequisites your plan already covers.
+  </p>
+  <figure>
+    <img
+      src="docs-img/plan.webp"
+      width="1280"
+      height="1040"
+      alt="My plan with semesters, courses in progress, planned courses and a Gen Ed slot"
+      loading="lazy"
+    />
+    <figcaption>My plan (a sample plan): this semester in progress, planned courses, and a Gen Ed slot.</figcaption>
+  </figure>
+</section>
+
+<section id="auto-plan" data-group="Using the app">
+  <h2>Auto-plan</h2>
+  <p>
+    With a <a href="#docs/degree-audit">degree audit</a> uploaded, <strong>Auto-plan my degree</strong> on My plan fills
+    every semester from next semester on with courses for each requirement you still need, at about 15 hours a semester.
+  </p>
+  <ul>
+    <li>Courses you planned yourself stay; Auto-plan fills around them.</li>
+    <li>Courses it adds say <em>auto</em> and which requirement they are for.</li>
+    <li>Gen Ed requirements become <a href="#docs/gen-ed-slots">Gen Ed slots</a> for you to fill.</li>
+    <li>
+      A note after it runs lists anything it couldn't fill by itself, like "any 400-level course", for you to pick.
+    </li>
+    <li><strong>Re-plan</strong> runs it again; <strong>Clear generated</strong> removes everything it added.</li>
+  </ul>
+  <p>See <a href="#docs/how-auto-plan-chooses">How Auto-plan chooses</a> for its rules.</p>
+</section>
+
+<section id="gen-ed-slots" data-group="Using the app">
+  <h2>Gen Ed slots</h2>
+  <p>
+    A Gen Ed slot is a dashed card that holds a place for a Gen Ed, like <em>Humanities &amp; the Arts</em>, until you
+    pick the course. It counts as 3 hours and moves like a course.
+  </p>
+  <ol>
+    <li>
+      Press <strong>Pick a course</strong> on a slot. Courses are listed best first: ones you can take that semester,
+      then ones that fill another open slot too, then higher GPA.
+    </li>
+    <li>
+      Pick one and it takes the slot's place. If it also counts for another open slot (say Humanities and Western
+      Cultures), that slot closes too.
+    </li>
+    <li>Or, on a Gen Ed course's page, press <strong>Use for my … slot</strong> to put it straight into your slot.</li>
+  </ol>
+  <p>
+    Add a slot yourself under <strong>Add a course</strong> → <em>Or save a place for a Gen Ed</em>. A course picked for
+    a slot has <strong>Back to an open slot</strong> in its <strong>⋯</strong> menu, and swapping it reopens any slot
+    the new course doesn't cover.
+  </p>
+</section>
+
+<section id="degree-audit" data-group="Using the app">
+  <h2>Degree audit</h2>
+  <ol>
+    <li>Run your audit in uAchieve and open the <strong>Audit Results</strong> tab.</li>
+    <li>Print the page and choose <strong>Save as PDF</strong>.</li>
+    <li>On the <strong>Audit</strong> page, choose the PDF or drop it on the box.</li>
+  </ol>
+  <p>The Audit page then shows:</p>
+  <ul>
+    <li>
+      Each requirement still unmet, with the courses that count for it, colored by whether you've taken or planned them,
+      can take them now, or need prerequisites first.
+    </li>
+    <li>For Gen Eds, what your plan already holds for it: planned courses that count, and open slots.</li>
+    <li><strong>Make a plan from this audit</strong>, which runs <a href="#docs/auto-plan">Auto-plan</a>.</li>
+  </ul>
+  <p>
+    Uploading also marks your courses: finished ones as taken, this semester's as in progress, and AP, proficiency or
+    transfer credit as credit before UIUC, each with the hours the audit credits. Upload a newer audit any time.
+  </p>
+  <p class="docs-note">
+    The PDF is read in your browser and never uploaded anywhere. Only requirements and course codes are kept, never your
+    name or ID. The checklist is unofficial: your advisor and the official audit have the final word.
+  </p>
+  <figure>
+    <img
+      src="docs-img/audit.webp"
+      width="1280"
+      height="440"
+      alt="The Audit page before an audit is uploaded"
+      loading="lazy"
+    />
+    <figcaption>The Audit page, ready for a PDF.</figcaption>
+  </figure>
+</section>
+
+<section id="data-sources" data-group="How it works">
+  <h2>Where the data comes from</h2>
+  <ul>
+    <li>
+      <strong>Courses</strong> come from UIUC's official Course Explorer feed: titles, descriptions, credit hours,
+      prerequisites, Gen Eds and registration notes, from the <span data-meta="oldest_catalog_searched">oldest</span> to
+      the <span data-meta="catalog_term">newest</span> catalog. When a course is in several catalogs, the newest entry
+      is used, and a course missing from the newest catalog says so on its page.
+    </li>
+    <li>
+      <strong>When it runs</strong> comes from the class schedules since
+      <span data-meta="oldest_term_searched">the oldest term</span>. "Fall only" or "Spring only" means it ran in just
+      that season in those terms.
+    </li>
+    <li>
+      <strong>Average GPA</strong> comes from Wade Fagen-Ulmschneider's GPA dataset (every term since 2010), weighted by
+      students; the 4.0 rate is the share of A and A+. Classes of 20 or fewer students have no grade data, because the
+      university doesn't release it.
+    </li>
+  </ul>
+  <p>The data was last imported on <span data-meta="imported_at">the import date</span>.</p>
+</section>
+
+<section id="prerequisites" data-group="How it works">
+  <h2>How prerequisites are read</h2>
+  <p>
+    Course Explorer gives each course's prerequisites as one sentence. The app splits it into requirements: each
+    requirement is a group of courses, and you need a number of them (<em>Required</em> means the one course;
+    <em>Choose 1 of 3</em> means any one). "Recommended" courses are left out, and so are "consent of instructor" and
+    similar conditions that aren't courses.
+  </p>
+  <p>
+    This reading is a best effort, so every course page also shows the official wording, which is the source of truth.
+    The plan's problem badges, the star map and Auto-plan all use the requirement groups.
+  </p>
+</section>
+
+<section id="how-auto-plan-chooses" data-group="How it works">
+  <h2>How Auto-plan chooses</h2>
+  <p>For each requirement you still need, Auto-plan takes the easiest path:</p>
+  <ol>
+    <li>Courses already in your plan that count for it come first.</li>
+    <li>Then courses needing the fewest extra prerequisites.</li>
+    <li>Then undergraduate courses before graduate (500-level) ones.</li>
+    <li>Then the highest average GPA.</li>
+  </ol>
+  <p>
+    When a requirement says "pick one of these areas", it takes the area needing the fewest new courses. It adds the
+    prerequisites its choices need, and leaves out courses not offered since
+    <span data-meta="oldest_term_searched">the oldest term</span>.
+  </p>
+  <p>
+    It then fills semesters in order. A course goes in the first semester where its prerequisites come earlier and it
+    runs that season, starting the longest chains of prerequisites first, with Gen Ed slots last. A semester holds about
+    15 hours; a course that runs in only one season may stretch it to 18 rather than wait a year.
+  </p>
+</section>
+
+<section id="your-data" data-group="How it works">
+  <h2>Your data</h2>
+  <ul>
+    <li>
+      Everything you mark, your plan, your slots and your audit's requirements are saved in this browser's storage on
+      this device. There's no account and no server; nothing you mark is sent anywhere.
+    </li>
+    <li>Another browser or device starts empty. To set one up, upload your audit there.</li>
+    <li>Clearing this site's data in your browser clears your plan.</li>
+    <li>From the audit, only requirements and course codes are kept, never your name or ID.</li>
+  </ul>
+</section>
+
+<section id="faq" data-group="Help">
+  <h2>FAQ and troubleshooting</h2>
+
+  <h3>This semester shows no courses in progress.</h3>
+  <p>
+    Courses saved before the app knew "in progress" look like plain taken courses. My plan shows a note: upload your
+    audit again, or press <strong>Mark them in progress</strong>. You can also add each course with
+    <strong>Add as in progress</strong>.
+  </p>
+
+  <h3>My plan is gone.</h3>
+  <p>
+    The plan lives in one browser on one device. Check that you're in the same browser, and that its site data wasn't
+    cleared. Uploading your audit again restores your courses; planned courses have to be added again.
+  </p>
+
+  <h3>A course I know isn't in the app.</h3>
+  <p>
+    The app has every course in a Course Explorer catalog since
+    <span data-meta="oldest_catalog_searched">the oldest catalog</span>. Check the code (search accepts
+    <em>cs225</em> too). A course missing from all of those catalogs was retired before then.
+  </p>
+
+  <h3>A course isn't on the star map.</h3>
+  <p>Only courses that need, or are needed by, another course are planets. Its course page says so.</p>
+
+  <h3>My plan's hours don't match the catalog.</h3>
+  <p>
+    With an audit, taken courses use the hours the audit credits, which can differ from the catalog (some proficiency
+    credit counts as 0 hours).
+  </p>
+
+  <h3>The plan disagrees with my official audit.</h3>
+  <p>
+    The plan and Auto-plan are unofficial and best effort. When they disagree, the official audit and your advisor are
+    right.
+  </p>
+
+  <h3>A course is flagged "Runs Fall only".</h3>
+  <p>
+    It ran only in Fall since <span data-meta="oldest_term_searched">the oldest term</span>. Departments do change
+    schedules, so check Course Explorer before relying on it.
+  </p>
+</section>

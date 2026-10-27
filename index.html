@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UIUC Course Map</title>
+    <link rel="icon" href="data:," />
+    <script>
+      // The saved light/dark choice (or the computer's setting), applied before the page paints
+      // so it never flashes the wrong theme. theme.js runs the switch in the top bar.
+      try {
+        const saved = localStorage.getItem("theme");
+        const light = window.matchMedia("(prefers-color-scheme: light)").matches;
+        document.documentElement.dataset.theme = saved || (light ? "light" : "dark");
+      } catch {
+        document.documentElement.dataset.theme = "dark";
+      }
+    </script>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="my-courses.css" />
+    <link rel="stylesheet" href="docs.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
+    <!-- Where the 3D view finds three.js (downloaded only when the 3D view opens). -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/+esm",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <!-- Slow aurora light and occasional shooting stars behind the page (effects.js). -->
+    <div id="sky" class="sky" aria-hidden="true">
+      <span class="aurora aurora-1"></span>
+      <span class="aurora aurora-2"></span>
+      <span class="aurora aurora-3"></span>
+    </div>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a href="#" class="brand" aria-label="UIUC Course Map, home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          UIUC Course Map
+        </a>
+        <div class="topbar-actions">
+          <nav class="site-nav" aria-label="Pages">
+            <a id="nav-courses" href="#">Courses</a>
+            <a id="nav-graph" href="#graph">Star map</a>
+            <a id="nav-plan" href="#plan">My plan</a>
+            <a id="nav-audit" href="#audit">Audit</a>
+            <a id="nav-docs" href="#docs">Docs</a>
+          </nav>
+          <button id="theme-toggle" class="theme-toggle" type="button">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4.5" />
+              <path
+                d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"
+              />
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div id="hero-wrap" class="hero-wrap">
+        <section id="hero-intro" class="hero-intro" hidden>
+          <p class="eyebrow">University of Illinois · from the official Course Explorer</p>
+          <h1>Every UIUC course,<br />and what leads to what.</h1>
+          <p class="hero-lede">
+            Look up any course, see its prerequisites, average GPA and when it is offered, or fly through the star map
+            of every prerequisite link.
+          </p>
+        </section>
+
+        <div id="search-area" class="search-area" hidden>
+          <label class="search-label" for="search">Search by course code or title</label>
+          <input
+            id="search"
+            class="search-input"
+            type="search"
+            placeholder="e.g. CS 225, math241, linear algebra"
+            autocomplete="off"
+            disabled
+          />
+          <div class="search-tools">
+            <span class="search-tools-label">Gen Ed</span>
+            <div id="gen-ed-filter" class="gen-ed-filter"></div>
+          </div>
+        </div>
+
+        <div id="hero-actions" class="hero-actions" hidden>
+          <a class="btn btn-primary" href="#graph">Explore the star map <span aria-hidden="true">→</span></a>
+          <button type="button" class="btn btn-ghost" id="browse-subjects">
+            Browse subjects <span aria-hidden="true">↓</span>
+          </button>
+        </div>
+
+        <section id="hero-more" class="hero-more" hidden>
+          <dl id="hero-stats" class="hero-stats"></dl>
+          <div class="popular">
+            <h2 class="section-label">Most needed courses</h2>
+            <ul id="popular-courses" class="popular-list"></ul>
+          </div>
+        </section>
+
+        <!-- A small 3D map of one course's links; the course changes every 5 seconds by the clock. -->
+        <section id="home-map" class="home-map" aria-label="Featured course">
+          <div id="home-map-canvas" class="home-map-canvas"></div>
+          <div class="home-map-caption">
+            <a id="home-map-course" class="home-map-course" href="#">
+              <span class="code"></span>
+              <span class="title"></span>
+            </a>
+            <p class="home-map-meta">
+              <span id="home-map-counts"></span>
+              <a id="home-map-graph" class="home-map-graph" href="#graph">Open in star map →</a>
+            </p>
+            <p class="feature-legend" aria-hidden="true">
+              <span class="needs">needs</span><span class="unlocks">unlocks</span>
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <p id="status" class="status" role="status">Loading course data…</p>
+
+      <section id="plan-view" class="plan-view" hidden></section>
+      <section id="audit-view" class="audit-view" hidden></section>
+
+      <section id="docs-view" class="docs-view" hidden></section>
+
+      <section id="graph-view" class="graph-view" hidden>
+        <div class="graph-toolbar">
+          <div id="graph-mode-toggle" class="view-toggle" role="group" aria-label="Graph style">
+            <button type="button" data-view="3d" aria-pressed="true">3D</button>
+            <button type="button" data-view="2d" aria-pressed="false">2D</button>
+          </div>
+          <div id="graph-suggest" class="picker suggest graph-search-wrap">
+            <input
+              id="graph-search"
+              class="graph-search"
+              type="search"
+              placeholder="Type MATH, CS 4, CS 225 or a title word"
+              aria-label="Filter the graph by course code, subject or title"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="graph-suggestions"
+              aria-autocomplete="list"
+              autocomplete="off"
+            />
+            <div class="picker-panel">
+              <ul id="graph-suggestions" class="picker-list" role="listbox" aria-label="Matching courses"></ul>
+            </div>
+          </div>
+          <div id="graph-subject" class="graph-subject"></div>
+          <button
+            id="graph-mine"
+            class="btn btn-ghost graph-mine"
+            type="button"
+            aria-pressed="false"
+            title="Show only your taken and planned courses and what they let you take next"
+          >
+            <span class="mine-dots" aria-hidden="true"><i></i><i></i><i></i></span> My courses
+          </button>
+        </div>
+        <p id="graph-status" class="status graph-status" role="status"></p>
+        <div id="graph-stage" class="graph-stage">
+          <div id="graph-3d" class="graph-3d">
+            <button id="graph-back" class="graph-back" type="button" hidden>← Back to map</button>
+          </div>
+          <aside id="graph-card" class="graph-card" hidden></aside>
+        </div>
+        <div id="graph-2d" class="graph-2d" hidden></div>
+      </section>
+
+      <section id="subjects" class="subjects" hidden>
+        <div class="subjects-header">
+          <h2 id="subjects-heading">Browse by subject</h2>
+          <div class="subjects-tools">
+            <label class="visually-hidden" for="subject-filter">Filter subjects</label>
+            <input
+              id="subject-filter"
+              class="subject-filter"
+              type="search"
+              placeholder="Filter subjects, e.g. math, CS, psychology"
+              autocomplete="off"
+            />
+            <div id="subject-view-toggle" class="view-toggle" role="group" aria-label="Show subjects as">
+              <button type="button" data-view="cards" aria-pressed="true">Cards</button>
+              <button type="button" data-view="list" aria-pressed="false">List</button>
+            </div>
+          </div>
+        </div>
+        <p id="subject-filter-empty" class="status" hidden></p>
+        <ul id="subject-grid" class="subject-grid"></ul>
+      </section>
+
+      <div id="layout" class="layout" hidden>
+        <section class="list-panel">
+          <div id="list-header" class="list-header"></div>
+          <div id="course-view-toggle" class="view-toggle list-toggle" role="group" aria-label="Show courses as">
+            <button type="button" data-view="cards" aria-pressed="true">Cards</button>
+            <button type="button" data-view="list" aria-pressed="false">List</button>
+          </div>
+          <ul id="results" class="results" aria-label="Courses"></ul>
+        </section>
+        <article id="detail" class="detail"></article>
+      </div>
+    </main>
+
+    <footer id="source-note" class="source-note"></footer>
+  </body>
+</html>

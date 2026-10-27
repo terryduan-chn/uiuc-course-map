@@ -1,0 +1,189 @@
+/* The Docs page: a table of contents beside the text (above it, folded, on phones).
+   Loaded after style.css and my-courses.css, whose theme colors it uses. */
+
+.docs-view {
+  max-width: 1120px;
+  animation: rise-in 0.35s var(--ease) both;
+}
+
+.docs-header h1 {
+  margin: 8px 0 4px;
+  font-size: 1.9rem;
+}
+
+.docs-lead {
+  margin: 0 0 20px;
+  color: var(--muted);
+}
+
+.docs-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+/* ---- Table of contents ---- */
+
+.docs-side {
+  position: sticky;
+  top: 84px; /* just below the sticky top bar */
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.docs-toc-menu > summary {
+  display: none; /* a menu only on phones */
+}
+
+.docs-toc-group + .docs-toc-group {
+  margin-top: 16px;
+}
+
+.docs-toc-heading {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.docs-toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docs-toc a {
+  display: block;
+  padding: 5px 10px;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+
+.docs-toc a:hover {
+  color: var(--text);
+}
+
+.docs-toc a[aria-current] {
+  border-left-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ---- The text ---- */
+
+.docs-content {
+  min-width: 0;
+  line-height: 1.6;
+}
+
+.docs-content section {
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  scroll-margin-top: 84px; /* a contents link lands below the sticky top bar */
+}
+
+.docs-content section + section {
+  margin-top: 16px;
+}
+
+.docs-content h2 {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+}
+
+.docs-content h3 {
+  margin: 18px 0 4px;
+  font-size: 1.02rem;
+}
+
+.docs-content p,
+.docs-content ul,
+.docs-content ol,
+.docs-content dl {
+  margin: 0 0 10px;
+}
+
+.docs-content ul,
+.docs-content ol {
+  padding-left: 1.3em;
+}
+
+.docs-content li + li {
+  margin-top: 4px;
+}
+
+.docs-content dt {
+  font-weight: 700;
+}
+
+.docs-content dd {
+  margin: 0 0 8px;
+}
+
+.docs-note {
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  font-size: 0.92rem;
+}
+
+.docs-content figure {
+  margin: 14px 0 0;
+}
+
+.docs-content img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.docs-content figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ---- Phones: one column, the contents folded into a menu at the top ---- */
+
+@media (max-width: 860px) {
+  .docs-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .docs-side {
+    position: static;
+    max-height: none;
+  }
+
+  .docs-toc-menu {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  .docs-toc-menu > summary {
+    display: block;
+    padding: 10px 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .docs-toc-menu .docs-toc {
+    padding: 0 14px 12px;
+  }
+
+  .docs-content section {
+    padding: 16px;
+  }
+}
