@@ -1,4 +1,4 @@
-// The #docs page: the app's documentation (docs.html), with a table of contents beside it.
+// The #docs page: the app's documentation (docs/docs.html), with a table of contents beside it.
 // Every section has its own address, #docs/<id>, so one click in the contents (or a shared
 // link) lands on it, and the contents follow along as you scroll.
 
@@ -107,7 +107,7 @@ export function createDocsView({ element, meta }) {
   async function load() {
     view.replaceChildren(element("p", { className: "status", textContent: "Loading the docs…" }));
     try {
-      const response = await fetch("docs.html");
+      const response = await fetch("docs/docs.html");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       build(await response.text());
       if (!view.hidden) scrollToSection(wanted);
