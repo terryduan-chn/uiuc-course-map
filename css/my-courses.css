@@ -103,6 +103,14 @@
   font-size: 1.8rem;
 }
 
+.plan-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .plan-add {
   display: flex;
   flex-wrap: wrap;
@@ -140,18 +148,48 @@
   font-size: 0.9rem;
 }
 
-/* One card per semester, wrapping into rows: a four-year plan reads left to right. */
+/* One full-width row per semester, top to bottom: its name on the left, its courses side by side. */
 .plan-semesters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.plan-semester {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: 130px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
-  margin-bottom: 18px;
+}
+
+.plan-semester-head h3 {
+  margin: 2px 0 8px;
+  font-size: 1.05rem;
+}
+
+.plan-semester-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.plan-semester-badges .plan-load {
+  margin-left: 0;
+}
+
+.plan-semester-body {
+  min-width: 0;
+}
+
+.plan-semester-body .plan-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
 }
 
 .plan-semester,
 .plan-ready {
-  padding: 14px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
@@ -166,7 +204,6 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-.plan-semester h3,
 .plan-ready h3 {
   display: flex;
   align-items: baseline;
@@ -226,6 +263,7 @@
 }
 
 .plan-course {
+  position: relative;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--muted);
@@ -674,7 +712,7 @@ button.plan-button:focus-visible {
 
 .plan-drop-hint {
   margin: 0;
-  padding: 18px 8px;
+  padding: 8px;
   border: 1px dashed var(--border);
   border-radius: 10px;
   color: var(--muted);
@@ -1045,7 +1083,7 @@ button.plan-button:focus-visible {
   display: grid;
   grid-template-columns: 1fr auto;
   width: 100%;
-  padding: 0;
+  padding: 0 22px 0 0; /* room for the ✕ in the corner */
   border: 0;
   background: none;
   color: inherit;
@@ -1285,7 +1323,7 @@ button.plan-button:focus-visible {
 }
 
 .plan-credit-note {
-  margin: 0 0 10px;
+  margin: 2px 0 10px;
   color: var(--muted);
   font-size: 0.82rem;
 }
@@ -1302,7 +1340,7 @@ button.plan-button:focus-visible {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
+  gap: 2px 8px;
   margin: 0;
 }
 
@@ -1315,7 +1353,12 @@ button.plan-button:focus-visible {
 }
 
 .plan-slot-head .title {
+  flex-basis: 100%; /* its own line under "Gen Ed slot", like a course's title under its code */
+  overflow: hidden;
+  font-size: 0.88rem;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plan-slot-pick {
@@ -1395,6 +1438,21 @@ button.plan-button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  margin-top: 6px;
+}
+
+/* The line gives up width first (its reason is cut short); the buttons never wrap. */
+.plan-course-foot .plan-meta {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.plan-course-foot .plan-course-actions {
+  flex: none;
+}
+
+.plan-course-foot .plan-actions-gap {
+  display: none;
 }
 
 .plan-course-foot .plan-course-actions {
@@ -1402,18 +1460,10 @@ button.plan-button:focus-visible {
 }
 
 /* The Gen Eds a course on My plan counts for: small tags, two when one course meets two. */
-.plan-geneds {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
 .plan-gened {
+  flex: none;
   padding: 0 6px;
+  font-size: 0.72rem;
   border: 1px dashed var(--accent);
   border-radius: 999px;
   color: var(--accent);
@@ -1548,6 +1598,22 @@ button.plan-button:focus-visible {
 }
 
 @media (max-width: 640px) {
+  .plan-semester {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .plan-semester-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .plan-semester-head h3 {
+    margin: 0;
+  }
+
   .audit-overview-row {
     grid-template-columns: minmax(0, 1fr) auto;
   }
@@ -1555,4 +1621,28 @@ button.plan-button:focus-visible {
   .audit-overview-needs {
     grid-column: 1;
   }
+}
+
+/* A course's ✕ (remove from plan), in the card's top right corner. */
+.plan-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.plan-remove:hover,
+.plan-remove:focus-visible {
+  background: color-mix(in srgb, var(--error) 18%, transparent);
+  color: var(--error);
 }

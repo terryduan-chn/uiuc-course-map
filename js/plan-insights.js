@@ -18,6 +18,8 @@ export const GEN_ED_SLOTS = [
   { key: "NW", name: "Non-Western Cultures", short: "Non-Western", codes: ["1NW"] },
   { key: "US", name: "U.S. Minority Cultures", short: "US Minority", codes: ["1US"] },
   { key: "COMP", name: "Advanced Composition", short: "Adv Comp", codes: ["1CLL"] },
+  // Not a Gen Ed: any course, for the hours a degree needs beyond its requirements (128 in all).
+  { key: "FREE", name: "Free elective", short: "Free elective", codes: [] },
 ];
 export const SLOT_HOURS = 3; // a Gen Ed slot counts as a typical 3-hour course
 export const slotKind = (key) => GEN_ED_SLOTS.find((slot) => slot.key === key) ?? null;
@@ -25,7 +27,7 @@ export const slotKind = (key) => GEN_ED_SLOTS.find((slot) => slot.key === key) ?
 /** The slot kind for an audit Gen Ed requirement ("NON-WESTERN CULTURES" -> "NW"), or null. */
 export function slotKindFor(title) {
   const codes = genEdCodesFor(title).join();
-  return GEN_ED_SLOTS.find((slot) => slot.codes.join() === codes)?.key ?? null;
+  return codes ? (GEN_ED_SLOTS.find((slot) => slot.codes.join() === codes)?.key ?? null) : null;
 }
 
 /** "Humanities & the Arts + U.S. Minority Cultures" for slot kinds ["HUM", "US"]. */
@@ -229,7 +231,8 @@ export function slotOptions({ slot, candidates, courses, slots, graph, facts, li
   const inPlan = new Set(courses.map((course) => course.id));
   const { before, same } = doneBy(courses, slot.term);
   const own = [slot.kind, ...(slot.also ?? [])];
-  const others = slots.filter((other) => other.id !== slot.id && !own.includes(other.kind));
+  // A free elective is extra hours: the course it holds can't also close a Gen Ed slot.
+  const others = slot.kind === "FREE" ? [] : slots.filter((other) => other.id !== slot.id && !own.includes(other.kind));
   return candidates
     .filter((id) => !inPlan.has(id) && facts?.get(id)?.offered)
     .map((id) => {

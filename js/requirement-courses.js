@@ -26,8 +26,13 @@ export function requirementCourses(rows, part, { genEdLimit } = {}) {
     ).map((course) => [course.id, course.title]);
   }
   const found = new Map();
-  for (const pattern of part.selectFrom) {
-    if (pattern.subject === "*") continue;
+  // "CS 397, any 400-level course" (Advanced Electives): any subject counts, but the courses the
+  // requirement has in mind are the ones in the subjects it names, so those are looked up.
+  const named = [...new Set(part.selectFrom.map((pattern) => pattern.subject).filter((subject) => subject !== "*"))];
+  const patterns = part.selectFrom.flatMap((pattern) =>
+    pattern.subject === "*" ? named.map((subject) => ({ ...pattern, subject })) : [pattern],
+  );
+  for (const pattern of patterns) {
     const matches = rows(
       `SELECT subject || ' ' || number AS id, title FROM courses
        WHERE subject = :subject AND number LIKE :number ORDER BY number`,

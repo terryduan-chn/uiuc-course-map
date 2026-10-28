@@ -206,6 +206,13 @@ export const myCourses = {
     save();
   },
 
+  /** Empties the plan (every course and slot), then marks these courses, with one change notice. */
+  startOver(courses = []) {
+    entries.clear();
+    slots.clear();
+    this.setMany(courses);
+  },
+
   /** Course ids with this status (or all of them), sorted. */
   ids: (status) =>
     [...entries]

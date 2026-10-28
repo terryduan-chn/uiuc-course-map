@@ -49,6 +49,20 @@ function save(audit) {
   }
 }
 
+/**
+ * The plan belongs to the audit: this removes both (audit, courses and Gen Ed slots) from this
+ * browser, after asking. Returns whether it did.
+ */
+export function clearEverything() {
+  const sure = window.confirm(
+    "Clear everything? Your audit, your plan, your Gen Ed slots and every course you marked are removed from this browser. This can't be undone.",
+  );
+  if (!sure) return false;
+  save(null);
+  myCourses.startOver();
+  return true;
+}
+
 /** The PDF's text lines, read in the browser. */
 async function pdfLines(file) {
   const pdfjs = await import(`${PDFJS_CDN}pdf.min.mjs`);
@@ -527,12 +541,9 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       audit = { programName, program, catalogYear, preparedOn, sections: requirementSections(parsed), takenIds };
       save(audit);
       const details = takenCourseDetails(parsed);
-      const added = takenIds.filter((id) => myCourses.status(id) !== "taken");
-      myCourses.setMany(takenIds.map((id) => ({ id, status: "taken", ...details[id] })));
-      message =
-        added.length > 0
-          ? `Read your audit. ${added.length} course${added.length === 1 ? "" : "s"} added to My plan as taken.`
-          : "Read your audit. Your taken courses were already in My plan.";
+      // A new audit starts a fresh plan: the old plan was made for the old audit.
+      myCourses.startOver(takenIds.map((id) => ({ id, status: "taken", ...details[id] })));
+      message = `Read your audit. My plan starts fresh with your ${takenIds.length} course${takenIds.length === 1 ? "" : "s"} from it.`;
     } catch (error) {
       console.error(error);
       message = "Couldn't read that PDF (or couldn't load the PDF reader; check your internet connection).";
@@ -540,10 +551,10 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
     draw();
   }
 
-  function removeAudit() {
+  function clearAll() {
+    if (!clearEverything()) return;
     audit = null;
-    save(null);
-    message = "Audit removed from this browser. Your courses in My plan were kept.";
+    message = "Cleared: your audit and your plan were removed from this browser.";
     draw();
   }
 
@@ -627,8 +638,9 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           element("button", {
             type: "button",
             className: "btn btn-ghost",
-            textContent: "Remove audit",
-            onclick: removeAudit,
+            textContent: "Clear everything",
+            title: "Remove your audit and your plan from this browser",
+            onclick: clearAll,
           }),
         ),
       ),
@@ -668,13 +680,20 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
   }
 
   // Marking a course on another page changes its chip here.
+  // Clear everything on My plan removes the audit too: an empty plan means look again. (Otherwise
+  // the one in memory stays, so the page still works for this visit when storage is blocked.)
+  const syncAudit = () => {
+    if (myCourses.ids().length === 0 && myCourses.slots().length === 0) audit = savedAudit();
+  };
   myCourses.onChange(() => {
+    syncAudit();
     if (!section.hidden) keepFocus(draw);
   });
 
   return {
     show() {
       section.hidden = false;
+      syncAudit();
       draw();
     },
     hide() {

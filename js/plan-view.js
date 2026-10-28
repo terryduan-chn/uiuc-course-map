@@ -1,7 +1,7 @@
 // The #plan page: your courses semester by semester, Gen Ed slots, Auto-plan, and what you
 // can take next. Each course's own controls (← → ⋯, badges) come from plan-controls.js.
 
-import { savedAudit } from "./audit-view.js";
+import { clearEverything, savedAudit } from "./audit-view.js";
 import { buildAutoPlan, TARGET_HOURS } from "./auto-plan.js";
 import { missingRequirements, readyNext } from "./graph-data.js";
 import { focusKey, keepFocus, myCourses } from "./my-courses.js";
@@ -196,12 +196,15 @@ export function createPlanView({ rows, element, getGraph }) {
       `head-${id}`,
     );
     head.setAttribute("aria-expanded", String(open));
-    // One line about it: taken or in progress, auto, hours, and why it's in the plan.
+    // One line about it: taken or in progress, auto, hours, its Gen Eds, and why it's in the plan.
     const fills = myCourses.fills(id);
     const why = fills.length > 0 ? `Fills ${slotNames(fills)}` : myCourses.reason(id);
+    // The Gen Eds this course counts for: one course can meet two (Humanities and Western).
+    const genEds = slotKindsOf(facts.get(id)).map(slotKind);
+    const genEdText = genEds.length === 0 ? "" : `Counts for ${genEds.map((kind) => kind.name).join(" and ")}`;
     const meta = element(
       "p",
-      { className: "plan-meta" },
+      { className: "plan-meta", title: [genEdText, why].filter(Boolean).join(". ") },
       status === "taken"
         ? myCourses.kind(id) === "registered"
           ? element("span", { className: "plan-status registered", textContent: "In progress" })
@@ -211,33 +214,30 @@ export function createPlanView({ rows, element, getGraph }) {
         ? element("span", { className: "plan-auto", textContent: "auto", title: "Added by Auto-plan" })
         : "",
       hours === null ? "" : element("span", { className: "plan-hours", textContent: `${hours} hr` }),
-      why ? element("span", { className: "plan-reason", textContent: `· ${why}`, title: why }) : "",
+      ...genEds.map((kind) => element("span", { className: "plan-gened", textContent: kind.short })),
+      why ? element("span", { className: "plan-reason", textContent: `· ${why}` }) : "",
     );
-    // The Gen Eds this course counts for: one course can meet two (Humanities and Western).
-    const genEds = slotKindsOf(facts.get(id)).map(slotKind);
-    const genEdLine =
-      genEds.length === 0
-        ? ""
-        : element(
-            "p",
-            {
-              className: "plan-geneds",
-              title: `Counts for ${genEds.map((kind) => kind.name).join(" and ")}`,
-            },
-            genEds.length > 1 ? "Gen Eds: " : "Gen Ed: ",
-            ...genEds.map((kind) => element("span", { className: "plan-gened", textContent: kind.short })),
-          );
-    const controls = planControls({ element, rows, graph, id });
+    // ✕ in the corner takes it out of the plan in one click (the ⋯ menu has the same).
+    const remove = focusKey(
+      element("button", {
+        type: "button",
+        className: "plan-remove",
+        textContent: "✕",
+        title: "Remove from plan",
+        ariaLabel: `Remove ${id} from the plan`,
+        onclick: () => myCourses.set(id, null),
+      }),
+      `remove-${id}`,
+    );
+    // Its line and its buttons share one row, so every card in a semester is the same small size.
     return draggableCard(
       id,
       { className: `plan-course ${status}${myCourses.isAuto(id) ? " auto" : ""}${issues.length ? " has-issues" : ""}` },
       head,
-      // A taken course has only ⋯, so it shares the line with its status and hours.
-      status === "taken" ? element("div", { className: "plan-course-foot" }, meta, controls) : meta,
-      genEdLine,
+      remove,
+      element("div", { className: "plan-course-foot" }, meta, planControls({ element, rows, graph, id })),
       issueBadges(element, issues),
       open ? courseDetails(id, course.term, info, graph, facts, courses) : "",
-      status === "taken" ? "" : controls,
     );
   }
 
@@ -245,6 +245,8 @@ export function createPlanView({ rows, element, getGraph }) {
   function slotCard(slot, graph, facts, courses, slots) {
     const kind = slotKind(slot.kind);
     const title = slotTitle(slot); // "Humanities & the Arts + Western/Comparative Cultures" for a shared slot
+    // The card shows short names ("Humanities + Western") so it stays as small as a course card.
+    const shortTitle = [slot.kind, ...slot.also].map((other) => slotKind(other).short).join(" + ");
     const arrow = (direction) =>
       moveButton({
         element,
@@ -261,7 +263,8 @@ export function createPlanView({ rows, element, getGraph }) {
       focusKey(
         element("summary", {
           className: "plan-action plan-slot-pick",
-          textContent: "Pick a course",
+          textContent: "Pick",
+          title: "Pick a course for this slot",
           ariaLabel: `Pick a course for the ${title} slot`,
         }),
         `pick-${slot.id}`,
@@ -273,7 +276,13 @@ export function createPlanView({ rows, element, getGraph }) {
       if (!picker.open || picks.childElementCount > 0) return;
       // A shared slot looks through every course of its main Gen Ed, so the ones meeting both are found.
       const limit = slot.also.length > 0 ? undefined : SLOT_CANDIDATES;
-      const candidates = requirementCourses(rows, slotPart(kind), { genEdLimit: limit }).map(([id]) => id);
+      // A free elective can be any undergraduate course of 3 hours or more.
+      const candidates =
+        slot.kind === "FREE"
+          ? [...facts]
+              .filter(([id, fact]) => fact.offered && fact.hours >= 3 && Number(id.split(" ")[1]) < 500)
+              .map(([id]) => id)
+          : requirementCourses(rows, slotPart(kind), { genEdLimit: limit }).map(([id]) => id);
       const options = slotOptions({ slot, candidates, courses, slots, graph, facts });
       if (options.length === 0) {
         picks.append(element("p", { className: "plan-menu-label", textContent: "No recently offered courses found." }));
@@ -329,16 +338,11 @@ export function createPlanView({ rows, element, getGraph }) {
       { className: `plan-course plan-slot${slot.auto ? " auto" : ""}` },
       element(
         "p",
-        { className: "plan-slot-head" },
-        element("span", { className: "code", textContent: "Gen Ed" }),
-        element("span", { className: "title", textContent: title }),
-      ),
-      element(
-        "p",
-        { className: "plan-meta" },
+        { className: "plan-slot-head", title: `${title}: pick a course later` },
+        element("span", { className: "code", textContent: slot.kind === "FREE" ? "Elective slot" : "Gen Ed slot" }),
         slot.auto ? element("span", { className: "plan-auto", textContent: "auto", title: "Added by Auto-plan" }) : "",
         element("span", { className: "plan-hours", textContent: `${SLOT_HOURS} hr` }),
-        element("span", { className: "plan-reason", textContent: "· pick a course later" }),
+        element("span", { className: "title", textContent: shortTitle }),
       ),
       element(
         "div",
@@ -588,12 +592,16 @@ export function createPlanView({ rows, element, getGraph }) {
     if (!lastResult) return "";
     const terms = new Set([...lastResult.courses, ...lastResult.slots].map((item) => item.term));
     const slotCount = lastResult.slots.length;
-    const added = [
-      lastResult.courses.length ? `${lastResult.courses.length} courses` : "",
-      slotCount ? `${slotCount} Gen Ed slot${slotCount === 1 ? "" : "s"}` : "",
-    ]
-      .filter(Boolean)
-      .join(" and ");
+    const count = (n, what) => (n ? `${n} ${what}${n === 1 ? "" : "s"}` : "");
+    const electives = lastResult.slots.filter((slot) => slot.kind === "FREE").length;
+    // "19 courses, 3 Gen Ed slots and 1 elective slot"
+    const added = new Intl.ListFormat("en").format(
+      [
+        count(lastResult.courses.length, "course"),
+        count(slotCount - electives, "Gen Ed slot"),
+        count(electives, "elective slot"),
+      ].filter(Boolean),
+    );
     return element(
       "section",
       { className: "plan-result", role: "status" },
@@ -601,7 +609,7 @@ export function createPlanView({ rows, element, getGraph }) {
         className: "plan-result-lead",
         textContent: !added
           ? "Nothing to add: your plan already covers every requirement it can fill."
-          : `Added ${added} over ${terms.size} semesters (marked “auto”). Open ⋯ on a course to swap it${slotCount ? "; press Pick a course on a slot to choose one" : ""}.`,
+          : `Added ${added} over ${terms.size} semesters (marked “auto”). Open ⋯ on a course to swap it${slotCount ? "; press Pick on a slot to choose one" : ""}.`,
       }),
       lastResult.open.length > 0
         ? element(
@@ -738,17 +746,29 @@ export function createPlanView({ rows, element, getGraph }) {
     return element(
       "section",
       { className: "plan-semester credit" },
-      element(
-        "h3",
-        {},
+      semesterHead(
         "Credit before UIUC",
         element("span", { className: "plan-load normal", textContent: `${hours} hr` }),
       ),
-      element("p", {
-        className: "plan-credit-note",
-        textContent: "AP, proficiency and transfer credit: it counts toward your degree, not toward a semester.",
-      }),
-      takenChips(credit, info, graph, facts, everything),
+      element(
+        "div",
+        { className: "plan-semester-body" },
+        element("p", {
+          className: "plan-credit-note",
+          textContent: "AP, proficiency and transfer credit: it counts toward your degree, not toward a semester.",
+        }),
+        takenChips(credit, info, graph, facts, everything),
+      ),
+    );
+  }
+
+  /** A semester row's left column: its name, then its badges (now, hours, problems). */
+  function semesterHead(name, ...badges) {
+    return element(
+      "div",
+      { className: "plan-semester-head" },
+      element("h3", { textContent: name }),
+      element("div", { className: "plan-semester-badges" }, ...badges),
     );
   }
 
@@ -787,34 +807,36 @@ export function createPlanView({ rows, element, getGraph }) {
     const card = element(
       "section",
       { className: `plan-semester ${when}` },
-      element(
-        "h3",
-        {},
+      semesterHead(
         term === NO_TERM ? "No term yet" : termLabel(term),
         when === "now" ? element("span", { className: "plan-now", textContent: "now" }) : "",
+        element("span", {
+          className: `plan-load ${load}`,
+          textContent: `${hours} hr${load === "light" && hours > 0 ? " · light" : load === "heavy" ? " · heavy" : ""}`,
+          title: load === "heavy" ? "Over 18 hours" : load === "light" ? "Under 12 hours (below full time)" : "",
+        }),
         problems > 0
           ? element("span", {
               className: "plan-problems",
               textContent: `${problems} problem${problems === 1 ? "" : "s"}`,
             })
           : "",
-        element("span", {
-          className: `plan-load ${load}`,
-          textContent: `${hours} hr${load === "light" && hours > 0 ? " · light" : load === "heavy" ? " · heavy" : ""}`,
-          title: load === "heavy" ? "Over 18 hours" : load === "light" ? "Under 12 hours (below full time)" : "",
-        }),
       ),
-      takenBlock,
-      cards.length > 0 ? element("ul", { className: "plan-list" }, ...cards) : "",
-      courses.length + slots.length === 0
-        ? element("p", {
-            className: "plan-drop-hint",
-            textContent:
-              when === "now"
-                ? "Add the courses you're taking this semester: type a code in Add a course and press Add as in progress."
-                : "Drag a course here, or use ← → on a course.",
-          })
-        : "",
+      element(
+        "div",
+        { className: "plan-semester-body" },
+        takenBlock,
+        cards.length > 0 ? element("ul", { className: "plan-list" }, ...cards) : "",
+        courses.length + slots.length === 0
+          ? element("p", {
+              className: "plan-drop-hint",
+              textContent:
+                when === "now"
+                  ? "Add the courses you're taking this semester: type a code in Add a course and press Add as in progress."
+                  : "Drag a course here, or use ← → on a course.",
+            })
+          : "",
+      ),
     );
     acceptDrops(card, term);
     return card;
@@ -908,7 +930,25 @@ export function createPlanView({ rows, element, getGraph }) {
       element(
         "header",
         { className: "plan-header" },
-        element("h2", { textContent: "My plan" }),
+        element(
+          "div",
+          { className: "plan-title-row" },
+          element("h2", { textContent: "My plan" }),
+          courses.length + slots.length > 0 || savedAudit()
+            ? element("button", {
+                type: "button",
+                className: "btn btn-ghost plan-clear",
+                textContent: "Clear everything",
+                title: "Remove your plan and your audit from this browser",
+                onclick: () => {
+                  // Auto-plan's note goes with the plan (set first: clearing redraws the page).
+                  const shown = lastResult;
+                  lastResult = null;
+                  if (!clearEverything()) lastResult = shown;
+                },
+              })
+            : "",
+        ),
         helpLine(),
         progressBar(courses, info, slots),
         element(

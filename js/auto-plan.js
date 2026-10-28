@@ -257,6 +257,27 @@ export function buildAutoPlan({
     for (let n = 0; n < count; n += 1) newSlots.set(`slot:${kind}:${newSlots.size}`, { kind, also: [], reason });
   }
 
+  // ---- Free electives: slots for the hours a degree needs beyond its requirements (128 in all) ----
+  const plannedHours = () =>
+    [...mine, ...picked.keys()].reduce((sum, id) => sum + hoursOf(id), 0) + (slots.length + newSlots.size) * SLOT_HOURS;
+  const totalHoursNeeded = Math.max(
+    0,
+    ...open.map((item) => item.hoursNeeded ?? 0),
+    ...hourParts.filter((part) => !/ADVANCED/.test(part.title)).map((part) => part.needs.hours),
+  );
+  const freeSlots = Math.ceil(Math.max(0, totalHoursNeeded - plannedHours()) / SLOT_HOURS);
+  for (let n = 0; n < freeSlots; n += 1) {
+    newSlots.set(`slot:FREE:${newSlots.size}`, {
+      kind: "FREE",
+      also: [],
+      reason: "Free electives (hours to graduate)",
+    });
+  }
+  // The total-hours requirements are now covered.
+  for (let index = open.length - 1; index >= 0; index -= 1) {
+    if (open[index].hoursNeeded && open[index].hoursNeeded <= plannedHours()) open.splice(index, 1);
+  }
+
   // ---- Semesters ----
   const semesters = [startTerm];
   while (semesters.length < MAX_SEMESTERS) semesters.push(nextMainTerm(semesters.at(-1)));
@@ -354,16 +375,14 @@ export function buildAutoPlan({
     }
   }
 
-  // The plan's total hours, for requirements counted only in hours (like 128 in all).
-  const plannedHours =
-    [...mine, ...picked.keys()].reduce((sum, id) => sum + hoursOf(id), 0) + (slots.length + newSlots.size) * SLOT_HOURS;
+  // Requirements counted only in hours: total hours are covered above; advanced hours need 300-level courses.
   const advancedHours = [...mine, ...picked.keys()]
     .filter((id) => Number(id.split(" ")[1]) >= 300)
     .reduce((sum, id) => sum + hoursOf(id), 0);
   for (const part of hourParts) {
     // "Advanced hours" means 300-level and above; other hour counts take any course in the plan.
     const advanced = /ADVANCED/.test(part.title);
-    const covered = advanced ? advancedHours : plannedHours;
+    const covered = advanced ? advancedHours : plannedHours();
     if (covered >= part.needs.hours) continue;
     open.push({
       title: titleCase(part.title),
@@ -371,7 +390,7 @@ export function buildAutoPlan({
     });
   }
   for (const item of open) {
-    if (item.hoursNeeded) item.text += ` The plan adds ${plannedHours} hours; fill the rest with electives.`;
+    if (item.hoursNeeded) item.text += ` The plan adds ${plannedHours()} hours; fill the rest with electives.`;
     delete item.hoursNeeded;
   }
 
