@@ -1647,3 +1647,34 @@ button.plan-button:focus-visible {
   background: color-mix(in srgb, var(--error) 18%, transparent);
   color: var(--error);
 }
+
+/* The student's GPAs from their audit, on Audit and in My plan's progress card. */
+.my-gpa {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.my-gpa-item {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.my-gpa dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.my-gpa dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.my-gpa strong {
+  color: var(--text);
+  font-size: 1.25rem;
+}

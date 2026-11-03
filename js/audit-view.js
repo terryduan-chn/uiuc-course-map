@@ -1,9 +1,10 @@
 // The #audit page: upload a uAchieve degree audit (PDF) and get a checklist of what's left.
 // The PDF is read in this browser with pdf.js and never sent anywhere; only the requirements
-// and course codes are kept (in localStorage), never the student's name or ID.
+// course codes and GPAs are kept (in localStorage), never the student's name or ID.
 
 import {
   catalogYearLabel,
+  gpaSummary,
   describeNeeds,
   describePattern,
   genEdCodesFor,
@@ -30,7 +31,7 @@ const OPTIONS_SHOWN = 8; // course chips shown per requirement before "show all"
 const GEN_ED_OPTIONS = 40; // Gen Ed courses looked at (best GPA first) before the list is trimmed
 const DEGREE_AUDIT_HELP = "https://registrar.illinois.edu/academic-records/dars-audit/";
 
-/** The audit saved in this browser (requirements and course codes only), or null. */
+/** The audit saved in this browser (requirements, course codes and GPAs only), or null. */
 export function savedAudit() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
@@ -47,6 +48,23 @@ function save(audit) {
   } catch {
     // Storage blocked: the checklist still shows for this visit.
   }
+}
+
+/** The student's GPAs from their audit, side by side, or nothing for an audit saved before GPAs were read. */
+export function gpaCard(element, audit) {
+  if (!audit?.gpas) return "";
+  return element(
+    "dl",
+    { className: "my-gpa", ariaLabel: "Your GPA, from your audit" },
+    ...gpaSummary(audit.gpas).map(({ name, value, detail }) =>
+      element(
+        "div",
+        { className: "my-gpa-item" },
+        element("dt", { textContent: `${name} GPA` }),
+        element("dd", {}, element("strong", { textContent: value }), ` ${detail}`),
+      ),
+    ),
+  );
 }
 
 /**
@@ -538,7 +556,8 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       }
       const takenIds = takenCourseIds(parsed);
       const { programName, program, catalogYear, preparedOn } = parsed;
-      audit = { programName, program, catalogYear, preparedOn, sections: requirementSections(parsed), takenIds };
+      const { gpas } = parsed;
+      audit = { programName, program, catalogYear, preparedOn, sections: requirementSections(parsed), takenIds, gpas };
       save(audit);
       const details = takenCourseDetails(parsed);
       // A new audit starts a fresh plan: the old plan was made for the old audit.
@@ -571,7 +590,7 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       element("p", {
         className: "audit-privacy",
         textContent:
-          "🔒 Your PDF is read in this browser and never uploaded. Only the requirements and course codes are kept here, not your name or ID. Unofficial: your advisor and the official audit have the final word.",
+          "🔒 Your PDF is read in this browser and never uploaded. Only the requirements, course codes and GPAs are kept here, not your name or ID. Unofficial: your advisor and the official audit have the final word.",
       }),
     );
     const upload = element(
@@ -644,6 +663,12 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           }),
         ),
       ),
+      audit.gpas
+        ? gpaCard(element, audit)
+        : element("p", {
+            className: "audit-message",
+            textContent: "To see your GPA here, upload your audit again (this starts a fresh plan).",
+          }),
       message && /^Read your audit/.test(message)
         ? element("p", { className: "audit-message", role: "status", textContent: message })
         : "",

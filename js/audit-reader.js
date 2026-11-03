@@ -1,8 +1,17 @@
 // Reads a uAchieve degree audit (the "Audit Results" page saved as a PDF) into a checklist.
 // No DOM code here: it works on the PDF's text lines, so the tests can run it in Node.
-// It keeps only requirements and course codes, never the student's name or ID.
+// It keeps only requirements, course codes and GPAs, never the student's name or ID.
 
 const SECTION_INDENT = 104; // requirement titles and their EARNED/NEEDS lines start left of this
+// "17.0 GPA HOURS EARNED 58.50 POINTS 3.44 GPA"; the GPA itself isn't always printed.
+const GPA_LINE = /^([\d.]+) GPA HOURS EARNED ([\d.]+) POINTS(?: ([\d.]+) GPA)?/;
+// The audit's GPAs, and the heading each sits under.
+const GPA_HEADINGS = [
+  ["Overall", /^MINIMUM OF \d+ HOURS/],
+  ["UIUC", /^UIUC GPA/],
+  ["Technical", /^TECHNICAL GPA/],
+  ["College", /^COLLEGE GPA/],
+];
 const COURSE_LINE =
   /^(FA|SP|SU|WI)(\d\d)\s+([A-Z]{2,5})\s+(\d{3}|\d--)\s+\S+\s+(\d+\.\d)\s+([A-Z]{1,2}[+-]?)(?:\s+>(\S))?/;
 const NUMBERED = /^(\d+|OR)\)\s+(.+)$/;
@@ -113,7 +122,15 @@ const newPart = (label, title) => ({ label, title, needs: null, selectFrom: [], 
  * `courses` is every course in the summary of courses taken: { id, term, hours, grade, inProgress }.
  */
 export function readAudit(lines) {
-  const audit = { programName: null, program: null, catalogYear: null, preparedOn: null, sections: [], courses: [] };
+  const audit = {
+    programName: null,
+    program: null,
+    catalogYear: null,
+    preparedOn: null,
+    sections: [],
+    courses: [],
+    gpas: GPA_HEADINGS.map(([name]) => ({ name, hours: 0, gpa: null })),
+  };
   let section = null;
   let part = null;
   let listKind = null; // "selectFrom" or "notFrom" while a course list runs onto the next line
@@ -145,6 +162,17 @@ export function readAudit(lines) {
       continue;
     }
     listKind = null;
+
+    const gpaLine = text.match(GPA_LINE);
+    if (gpaLine) {
+      const index = GPA_HEADINGS.findIndex(([, heading]) => heading.test(section?.title ?? ""));
+      const [hours, points, printed] = gpaLine.slice(1).map(Number);
+      if (index >= 0 && hours > 0) {
+        const gpa = printed || Math.round((points / hours) * 100) / 100;
+        audit.gpas[index] = { name: GPA_HEADINGS[index][0], hours, gpa };
+      }
+      continue;
+    }
 
     const course = text.match(COURSE_LINE);
     if (course) {
@@ -227,6 +255,15 @@ export function partGroups(section) {
 
 export function sectionIsMet(section) {
   return !section.needs && partGroups(section).every((group) => group.some(partIsMet));
+}
+
+/** The audit's GPAs for showing: one with no graded hours has no value, not a misleading 0.00. */
+export function gpaSummary(gpas) {
+  return gpas.map(({ name, hours, gpa }) =>
+    gpa === null
+      ? { name, value: "—", detail: "no grades yet" }
+      : { name, value: gpa.toFixed(2), detail: `on ${hours} hour${hours === 1 ? "" : "s"}` },
+  );
 }
 
 /** Sections worth showing: requirements, not GPA lines or the leftover-credit list. */

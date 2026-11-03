@@ -1,7 +1,7 @@
 // The #plan page: your courses semester by semester, Gen Ed slots, Auto-plan, and what you
 // can take next. Each course's own controls (← → ⋯, badges) come from plan-controls.js.
 
-import { clearEverything, savedAudit } from "./audit-view.js";
+import { clearEverything, gpaCard, savedAudit } from "./audit-view.js";
 import { buildAutoPlan, TARGET_HOURS } from "./auto-plan.js";
 import { missingRequirements, readyNext } from "./graph-data.js";
 import { focusKey, keepFocus, myCourses } from "./my-courses.js";
@@ -676,6 +676,7 @@ export function createPlanView({ rows, element, getGraph }) {
         element("span", { className: "plan-progress-total", textContent: `of ${progress.total} hours` }),
       ),
       bar,
+      gpaCard(element, audit),
       element(
         "p",
         { className: "plan-progress-note" },

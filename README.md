@@ -27,7 +27,7 @@ live demos you can click on a sample plan, plus how the data and Auto-plan work 
 ## Privacy
 
 There is no account and no server. Your plan is saved only in your own browser. An uploaded audit is
-read in your browser and never sent anywhere; only requirements and course codes are kept, never your
+read in your browser and never sent anywhere; only requirements, course codes and GPAs are kept, never your
 name or ID.
 
 ## How it's built

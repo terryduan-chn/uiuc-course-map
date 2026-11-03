@@ -46,6 +46,12 @@ const SAMPLE_AUDIT = {
   catalogYear: "202608",
   preparedOn: "",
   takenIds: ["CS 101", "CS 124", "MATH 221", "RHET 105", "MATH 231"],
+  gpas: [
+    { name: "Overall", hours: 17, gpa: 3.62 },
+    { name: "UIUC", hours: 17, gpa: 3.62 },
+    { name: "Technical", hours: 8, gpa: 3.5 },
+    { name: "College", hours: 17, gpa: 3.62 },
+  ],
   sections: [
     section("COMPOSITION I", null, [part("COMPOSITION I", null)]),
     section("COMPUTER SCIENCE CORE", null, [
