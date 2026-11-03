@@ -1,3 +1,4 @@
+import "./demo-mode.js"; // first: in a Docs demo it swaps the storage before anything reads it
 import { createAuditView } from "./audit-view.js";
 import { createCourseView } from "./course-view.js";
 import { createDocsView } from "./docs-view.js";

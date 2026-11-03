@@ -2,7 +2,6 @@
    Loaded after style.css and my-courses.css, whose theme colors it uses. */
 
 .docs-view {
-  max-width: 1120px;
   animation: rise-in 0.35s var(--ease) both;
 }
 
@@ -87,6 +86,53 @@
   border-radius: 16px;
   background: var(--surface);
   scroll-margin-top: 84px; /* a contents link lands below the sticky top bar */
+}
+
+/* Text lines stay short enough to read, however wide the screen is. */
+.docs-content section > :not(.docs-demo) {
+  max-width: 80ch;
+}
+
+/* A topic with a live demo: its text on the left, the demo beside it, staying in view. */
+.docs-content section:has(.docs-demo) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  column-gap: 28px;
+  align-items: start;
+}
+
+.docs-content .docs-demo {
+  position: sticky;
+  top: 84px;
+  grid-column: 2;
+  grid-row: 1 / span 40;
+  margin: 0;
+}
+
+.docs-demo iframe {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 210px);
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.docs-demo-note {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.docs-demo-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Previous and Next under the topic, each naming the topic it opens. */
@@ -175,14 +221,6 @@
   margin: 14px 0 0;
 }
 
-.docs-content img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
 .docs-content figcaption {
   margin-top: 6px;
   color: var(--muted);
@@ -190,6 +228,22 @@
 }
 
 /* ---- Phones: one column, the contents folded into a menu at the top ---- */
+
+/* Too narrow for text and demo side by side: the demo goes under the text. */
+@media (max-width: 1180px) {
+  .docs-content section:has(.docs-demo) {
+    display: block;
+  }
+
+  .docs-content .docs-demo {
+    position: static;
+    margin-top: 14px;
+  }
+
+  .docs-demo iframe {
+    height: 70vh;
+  }
+}
 
 @media (max-width: 860px) {
   .docs-layout {

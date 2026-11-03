@@ -1,6 +1,7 @@
 // The #docs page: the app's documentation (docs/docs.html), one topic at a time, with a table of
 // contents beside it and Previous / Next under it. Every topic has its own address, #docs/<id>,
-// so one click in the contents (or a shared link) opens it.
+// so one click in the contents (or a shared link) opens it. A topic's <figure data-demo="#plan">
+// becomes a live demo: the app itself in a frame, on a sample plan (see demo-mode.js).
 
 /**
  * @param {object} options
@@ -25,6 +26,23 @@ export function createDocsView({ element, meta }) {
   let loading = null; // the fetch under way, so a second visit doesn't start another
   let wanted = null; // the section to show once the content has loaded
 
+  /** Gives a demo the page's light or dark theme. */
+  function matchTheme(frame) {
+    const page = frame.contentDocument?.documentElement;
+    if (page) page.dataset.theme = document.documentElement.dataset.theme;
+  }
+
+  /** Starts a topic's demo (or starts it over): a new frame, with the sample plan as it began. */
+  function startDemo(figure) {
+    figure.querySelector("iframe")?.remove();
+    const frame = element("iframe", {
+      src: `index.html?demo${figure.dataset.demo}`,
+      title: `Live demo: ${figure.querySelector("figcaption").textContent}`,
+    });
+    frame.addEventListener("load", () => matchTheme(frame));
+    figure.prepend(frame);
+  }
+
   /** A Previous or Next link to a topic, named after it. */
   function pagerLink(id, direction) {
     const title = loaded.sections.find((section) => section.id === id).querySelector("h2").textContent;
@@ -42,7 +60,12 @@ export function createDocsView({ element, meta }) {
       loaded.sections.map((section) => section.id),
       id,
     );
-    for (const section of loaded.sections) section.hidden = section.id !== page.current;
+    for (const section of loaded.sections) {
+      section.hidden = section.id !== page.current;
+      // Only the open topic's demo runs: each one is a whole copy of the app.
+      if (section.hidden) section.querySelector(".docs-demo iframe")?.remove();
+      else if (section.querySelector(".docs-demo")) startDemo(section.querySelector(".docs-demo"));
+    }
     for (const [sectionId, link] of loaded.links) {
       if (sectionId === page.current) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
@@ -60,6 +83,22 @@ export function createDocsView({ element, meta }) {
     content.innerHTML = html; // our own file, served with the page
     for (const slot of content.querySelectorAll("[data-meta]")) {
       if (meta[slot.dataset.meta]) slot.textContent = meta[slot.dataset.meta];
+    }
+    for (const figure of content.querySelectorAll("figure[data-demo]")) {
+      figure.classList.add("docs-demo");
+      figure.append(
+        element(
+          "p",
+          { className: "docs-demo-note" },
+          "Live demo on a sample plan: try anything, your own plan doesn't change. ",
+          element("button", {
+            type: "button",
+            className: "docs-demo-reset",
+            textContent: "Start over",
+            onclick: () => startDemo(figure),
+          }),
+        ),
+      );
     }
     const sections = [...content.querySelectorAll("section[id]")];
     const links = new Map();
@@ -113,6 +152,11 @@ export function createDocsView({ element, meta }) {
       element("div", { className: "docs-layout" }, element("aside", { className: "docs-side" }, menu), content),
     );
     loaded = { sections, links, pager };
+    // Switching light or dark in the top bar reaches the open demo too.
+    new MutationObserver(() => view.querySelectorAll(".docs-demo iframe").forEach(matchTheme)).observe(
+      document.documentElement,
+      { attributes: true, attributeFilter: ["data-theme"] },
+    );
   }
 
   async function load() {
