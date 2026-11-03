@@ -19,10 +19,10 @@ nothing is typed in by hand.
 - **Plan your degree**: lay courses out by semester, drag them around, and see problems like a
   prerequisite in the wrong semester.
 - **Upload your degree audit** (the uAchieve PDF) to see what's left, and let **Auto-plan** fill the
-  remaining semesters, leaving Gen Eds as slots for you to pick.
+  remaining semesters, leaving Gen Eds and free electives as slots for you to pick.
 
-The [Docs page](https://terryduan-chn.github.io/uiuc-course-map/#docs) explains every feature, how
-the data and Auto-plan work, and common questions.
+The [Docs page](https://terryduan-chn.github.io/uiuc-course-map/#docs) explains every feature, with
+live demos you can click on a sample plan, plus how the data and Auto-plan work and common questions.
 
 ## Privacy
 
@@ -41,7 +41,7 @@ index.html   the page
 css/         styles: the whole site, your plan and audit, the docs
 js/          the app, one file per page or job (app.js starts it)
 data/        courses.db, every course, prerequisite, Gen Ed and GPA
-docs/        the Docs page's text and pictures
+docs/        the Docs page's text, and the picture above
 ```
 
 Data sources:
