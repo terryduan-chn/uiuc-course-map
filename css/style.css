@@ -1,34 +1,36 @@
 /* Space theme, matching the star map: deep navy, soft blue light, warm star orange. */
+/* Plain and calm: solid surfaces, one blue accent, and status colors (taken, planned, ready)
+   that stand out because nothing else competes with them. The star map keeps its own scene. */
 :root {
-  --bg: #070a14;
-  --surface: rgba(24, 31, 54, 0.72);
-  --surface-raised: rgba(34, 43, 74, 0.85);
-  --text: #e6e9f2;
-  --muted: #9aa3b8;
-  --border: rgba(140, 160, 220, 0.18);
-  --accent: #b1b9ff;
-  --accent-soft: rgba(150, 130, 255, 0.15);
-  --highlight: #ffb38a;
-  --error: #ff9b94;
+  --bg: #10141c;
+  --surface: #171c27;
+  --surface-raised: #1e2432;
+  --text: #e7eaf0;
+  --muted: #9aa3b5;
+  --border: #2c3443;
+  --accent: #7cacff;
+  --accent-soft: rgba(124, 172, 255, 0.14);
+  --highlight: #f2f4f8; /* course codes: bold text, no extra color */
+  --error: #ff8f87;
   /* My courses: taken, planned, and ready to take next */
   --taken: #4ade80;
   --planned: #60a5fa;
   --ready: #fbbf24;
-  --scrollbar: rgba(140, 160, 220, 0.3);
-  --glow: 0 0 0 1px rgba(167, 139, 250, 0.45), 0 10px 30px -10px rgba(167, 139, 250, 0.6);
+  --scrollbar: rgba(154, 163, 181, 0.35);
+  --glow: 0 0 0 1px var(--accent);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --accent-gradient: linear-gradient(135deg, #7dd3fc, #a78bfa 55%, #f0abfc);
+  --accent-gradient: linear-gradient(var(--accent), var(--accent)); /* solid: kept as a token so buttons share it */
   /* Every input, menu and switch shares these, so rows of controls line up. */
   --control: 42px;
   --control-big: 56px;
   --radius: 12px;
-  --on-accent: #0b1020; /* text on the gradient buttons */
-  --topbar: rgba(7, 10, 20, 0.7);
-  --popover: rgba(14, 19, 38, 0.96);
-  --shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.8);
-  --focus-ring: 0 0 0 4px rgba(143, 180, 255, 0.15);
-  --title-gradient: linear-gradient(100deg, #ffffff 10%, #a5b4fc 45%, #f0abfc 80%, var(--highlight));
-  --number-gradient: linear-gradient(180deg, #ffffff, var(--accent));
+  --on-accent: #0b1020; /* text on accent buttons */
+  --topbar: #141923;
+  --popover: #1e2432;
+  --shadow: 0 16px 40px -20px rgba(0, 0, 0, 0.7);
+  --focus-ring: 0 0 0 4px rgba(124, 172, 255, 0.2);
+  --title-gradient: linear-gradient(var(--text), var(--text));
+  --number-gradient: linear-gradient(var(--text), var(--text));
   --hue-text-lightness: 75%; /* subject-colored text */
   --hue-tint-lightness: 66%; /* subject-colored dots and bars */
   /* Lets the browser draw its own parts (scrollbars, inputs) dark too. */
@@ -37,29 +39,25 @@
 
 /* Light theme, chosen with the sun/moon switch in the top bar (theme.js). */
 :root[data-theme="light"] {
-  --bg: #f4f5fb;
-  --surface: rgba(255, 255, 255, 0.78);
+  --bg: #f5f6f8;
+  --surface: #ffffff;
   --surface-raised: #ffffff;
-  --text: #1a1d2b;
-  --muted: #596079;
-  --border: rgba(40, 50, 110, 0.13);
-  --accent: #5146d8;
-  --accent-soft: rgba(81, 70, 216, 0.09);
-  --highlight: #c2410c;
+  --text: #1a1d24;
+  --muted: #5b6273;
+  --border: #dde1e8;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.09);
+  --highlight: #1a1d24;
   --error: #b42318;
   --taken: #15803d;
   --planned: #2563eb;
   --ready: #b45309;
-  --scrollbar: rgba(40, 50, 110, 0.25);
-  --glow: 0 0 0 1px rgba(81, 70, 216, 0.3), 0 12px 30px -14px rgba(81, 70, 216, 0.45);
-  --accent-gradient: linear-gradient(135deg, #38bdf8, #8b5cf6 55%, #ec4899);
+  --scrollbar: rgba(40, 50, 80, 0.25);
   --on-accent: #ffffff;
-  --topbar: rgba(244, 245, 251, 0.75);
-  --popover: rgba(255, 255, 255, 0.97);
-  --shadow: 0 24px 50px -24px rgba(40, 50, 110, 0.35);
-  --focus-ring: 0 0 0 4px rgba(81, 70, 216, 0.15);
-  --title-gradient: linear-gradient(100deg, #1a1d2b 10%, #5146d8 50%, #c026d3 80%, var(--highlight));
-  --number-gradient: linear-gradient(180deg, #1a1d2b, var(--accent));
+  --topbar: #ffffff;
+  --popover: #ffffff;
+  --shadow: 0 16px 36px -20px rgba(30, 40, 70, 0.3);
+  --focus-ring: 0 0 0 4px rgba(37, 99, 235, 0.15);
   --hue-text-lightness: 38%;
   --hue-tint-lightness: 55%;
   color-scheme: light;
@@ -879,15 +877,14 @@ main,
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff6e5, var(--highlight) 55%, #b5562d);
-  box-shadow: 0 0 14px rgba(255, 176, 112, 0.6);
+  background: var(--accent);
 }
 
 .brand-mark::after {
   content: "";
   position: absolute;
   inset: 7px -6px;
-  border: 1.5px solid rgba(143, 180, 255, 0.85);
+  border: 1.5px solid var(--muted);
   border-radius: 50%;
   transform: rotate(-20deg);
 }
@@ -917,8 +914,8 @@ main,
 }
 
 .site-nav a[aria-current] {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 /* Course code and title on the left, "Open in star map" on the right. */
@@ -944,7 +941,7 @@ main,
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffffff, #4b347f);
+  background: var(--accent);
 }
 
 .star-link-icon::after {
@@ -1292,53 +1289,6 @@ main,
 
 body {
   background: transparent;
-}
-
-/* Fixed sky behind the page: nebula light plus two layers of tiny stars. The second
-   layer slowly twinkles; it animates opacity only, which costs the browser nothing. */
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-}
-
-body::before {
-  background-image: radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1px 1px at 140px 90px, rgba(200, 215, 255, 0.3), transparent),
-    radial-gradient(1.5px 1.5px at 260px 160px, rgba(255, 255, 255, 0.35), transparent),
-    radial-gradient(1px 1px at 330px 40px, rgba(255, 220, 190, 0.3), transparent),
-    radial-gradient(1200px 700px at 85% -10%, rgba(88, 70, 190, 0.22), transparent 60%),
-    radial-gradient(900px 600px at -10% 30%, rgba(40, 170, 220, 0.14), transparent 60%),
-    radial-gradient(800px 600px at 60% 120%, rgba(240, 110, 200, 0.12), transparent 60%);
-  background-size:
-    380px 220px,
-    380px 220px,
-    380px 220px,
-    380px 220px,
-    100% 100%,
-    100% 100%,
-    100% 100%;
-}
-
-body::after {
-  background-image: radial-gradient(1.5px 1.5px at 70px 120px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 210px 20px, rgba(190, 210, 255, 0.7), transparent),
-    radial-gradient(2px 2px at 400px 260px, rgba(255, 235, 210, 0.6), transparent);
-  background-size: 520px 340px;
-  animation: twinkle 7s ease-in-out infinite alternate;
-  will-change: opacity;
-}
-
-@keyframes twinkle {
-  from {
-    opacity: 0.15;
-  }
-  to {
-    opacity: 0.6;
-  }
 }
 
 /* Glass panels: only on a few large surfaces, since blur on hundreds of cards would lag. */
@@ -1802,7 +1752,6 @@ body::after {
 .btn-primary {
   background: var(--accent-gradient);
   color: var(--on-accent);
-  box-shadow: 0 10px 30px -12px rgba(150, 140, 255, 0.8);
 }
 
 .btn-ghost {
@@ -2274,18 +2223,6 @@ body.is-home .home-map {
   box-shadow: inset 3px 0 0 var(--highlight);
 }
 
-/* Daytime: soft pastel light instead of stars. */
-:root[data-theme="light"] body::before {
-  background-image: radial-gradient(1200px 700px at 85% -10%, rgba(139, 92, 246, 0.14), transparent 60%),
-    radial-gradient(900px 600px at -10% 30%, rgba(56, 189, 248, 0.14), transparent 60%),
-    radial-gradient(800px 600px at 60% 120%, rgba(236, 72, 153, 0.1), transparent 60%);
-  background-size: 100% 100%;
-}
-
-:root[data-theme="light"] body::after {
-  display: none;
-}
-
 /* ---- Top bar: page links and the light/dark switch ---- */
 
 .topbar-actions {
@@ -2422,81 +2359,6 @@ body.is-home .hero-more {
   }
 }
 
-/* ---- Moving sky: slow aurora light and shooting stars ---- */
-
-.sky {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.aurora {
-  position: absolute;
-  width: 60vmax;
-  height: 60vmax;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 65%);
-  animation: aurora-drift 38s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-.aurora-1 {
-  top: -22vmax;
-  left: -12vmax;
-}
-
-.aurora-2 {
-  top: 8vmax;
-  right: -22vmax;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.15), transparent 65%);
-  animation-duration: 46s;
-  animation-delay: -12s;
-}
-
-.aurora-3 {
-  bottom: -28vmax;
-  left: 18vw;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.13), transparent 65%);
-  animation-duration: 54s;
-  animation-delay: -25s;
-}
-
-@keyframes aurora-drift {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(9vw, 7vh) scale(1.15);
-  }
-  100% {
-    transform: translate(-7vw, 11vh) scale(0.92);
-  }
-}
-
-/* A thin streak, bright at its head, flying down and to the left. */
-.shooting-star {
-  position: absolute;
-  width: 160px;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #ffffff, rgba(190, 210, 255, 0.6) 30%, transparent);
-  opacity: 0;
-  transform: rotate(-25deg);
-  animation: shoot 1.2s ease-out forwards;
-}
-
-@keyframes shoot {
-  10% {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-    transform: translate(-460px, 215px) rotate(-25deg);
-  }
-}
-
 /* ---- Cards float in as they scroll into view (effects.js adds .reveal, then .revealed) ---- */
 
 .reveal {
@@ -2517,56 +2379,14 @@ body.is-home .hero-more {
   translate: none;
 }
 
-/* ---- Cards lean toward the pointer, with a soft light that follows it ---- */
-
-.subject-card,
-.popular-course,
-.brief-card,
-.hero-stat,
-.stat {
-  position: relative;
-}
-
-.subject-card::after,
-.popular-course::after,
-.brief-card::after,
-.hero-stat::after,
-.stat::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    240px circle at var(--mx, 50%) var(--my, 50%),
-    hsl(var(--hue, 250) 90% 70% / 0.16),
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity 0.25s var(--ease);
-  pointer-events: none;
-}
-
-.subject-card:hover::after,
-.popular-course:hover::after,
-.brief-card:hover::after,
-.hero-stat:hover::after,
-.stat:hover::after {
-  opacity: 1;
-}
+/* ---- Cards show they can be clicked with a border in the accent color ---- */
 
 .subject-card:hover,
 .popular-course:hover,
 .brief-card:hover,
 .hero-stat:hover,
 .stat:hover {
-  transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-3px);
-  border-color: hsl(var(--hue, 250) 80% var(--hue-tint-lightness) / 0.7);
-  box-shadow: var(--glow);
-}
-
-/* Rows in list view only light up; they don't lean. */
-.subject-grid.as-list .subject-card:hover {
-  transform: none;
+  border-color: var(--accent);
 }
 
 /* ---- A ring of light spreads from a pressed button ---- */

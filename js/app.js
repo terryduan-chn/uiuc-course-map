@@ -653,7 +653,7 @@ async function start() {
   const importInfo = readMeta();
   docsView = createDocsView({ element, meta: importInfo });
   shownPageKind = pageKind(parseRoute(location.hash));
-  startEffects({ main: document.querySelector("main"), sky: document.getElementById("sky") });
+  startEffects({ main: document.querySelector("main") });
   graphView = createGraphView({ rows, element });
   courseView = createCourseView({
     rows,

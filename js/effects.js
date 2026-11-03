@@ -1,6 +1,5 @@
-// Page-wide motion: cards that float in as they scroll into view, cards that tilt toward the
-// pointer with a glow that follows it, ripples on clicked buttons, shooting stars, and smooth
-// transitions between pages. Everything here animates only opacity and transforms (cheap for
+// Page-wide motion, kept calm: cards that float in as they scroll into view, ripples on
+// clicked buttons, and smooth transitions between pages. Everything here animates only opacity and transforms (cheap for
 // the browser), and turns itself off when the computer asks for reduced motion.
 
 const REVEAL_SELECTOR = [
@@ -14,11 +13,8 @@ const REVEAL_SELECTOR = [
 ].join(", ");
 const REVEAL_STAGGER_MS = 35;
 const REVEAL_STAGGER_LIMIT = 12; // later cards in a batch don't wait any longer than this
-const TILT_SELECTOR = ".subject-card, .popular-course, .brief-card, .hero-stat, .stat";
-const TILT_DEGREES = 6;
 const RIPPLE_SELECTOR =
   ".btn, .view-toggle button, .site-nav a, .theme-toggle, .picker-button, .graph-card-actions button, .level-button";
-const SHOOTING_STAR_EVERY_MS = [5000, 11000]; // a random wait between these
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -55,37 +51,6 @@ function watchReveals(root) {
   watch();
 }
 
-/** Cards lean toward the pointer, and a soft light follows it across them. */
-function watchPointer() {
-  let pending = null;
-  document.addEventListener("pointermove", (event) => {
-    if (event.pointerType !== "mouse") return;
-    pending = event;
-    requestAnimationFrame(() => {
-      if (!pending) return;
-      const card = pending.target.closest?.(TILT_SELECTOR);
-      if (card) {
-        const box = card.getBoundingClientRect();
-        const x = (pending.clientX - box.left) / box.width;
-        const y = (pending.clientY - box.top) / box.height;
-        card.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
-        card.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
-        card.style.setProperty("--ry", `${((x - 0.5) * 2 * TILT_DEGREES).toFixed(2)}deg`);
-        card.style.setProperty("--rx", `${((0.5 - y) * 2 * TILT_DEGREES).toFixed(2)}deg`);
-      }
-      pending = null;
-    });
-  });
-  // Level the card again when the pointer leaves it.
-  document.addEventListener("pointerout", (event) => {
-    const card = event.target.closest?.(TILT_SELECTOR);
-    if (card && !card.contains(event.relatedTarget)) {
-      card.style.removeProperty("--rx");
-      card.style.removeProperty("--ry");
-    }
-  });
-}
-
 /** A ring of light spreads from where a button was pressed. */
 function watchRipples() {
   document.addEventListener("pointerdown", (event) => {
@@ -101,24 +66,6 @@ function watchRipples() {
     button.append(ripple);
     ripple.addEventListener("animationend", () => ripple.remove());
   });
-}
-
-/** Now and then a shooting star crosses the background (dark theme only, page visible). */
-function launchShootingStars(layer) {
-  const [shortest, longest] = SHOOTING_STAR_EVERY_MS;
-  const next = () => setTimeout(launch, shortest + Math.random() * (longest - shortest));
-  const launch = () => {
-    if (!document.hidden && document.documentElement.dataset.theme !== "light") {
-      const star = document.createElement("span");
-      star.className = "shooting-star";
-      star.style.top = `${Math.random() * 45}%`;
-      star.style.left = `${20 + Math.random() * 70}%`;
-      layer.append(star);
-      star.addEventListener("animationend", () => star.remove());
-    }
-    next();
-  };
-  next();
 }
 
 /**
@@ -137,10 +84,8 @@ export function withPageTransition(update) {
 }
 
 /** Starts every page-wide effect. */
-export function startEffects({ main, sky }) {
+export function startEffects({ main }) {
   if (reducedMotion()) return;
   watchReveals(main);
-  watchPointer();
   watchRipples();
-  launchShootingStars(sky);
 }

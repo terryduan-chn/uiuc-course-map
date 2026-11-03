@@ -89,8 +89,44 @@
   scroll-margin-top: 84px; /* a contents link lands below the sticky top bar */
 }
 
-.docs-content section + section {
+/* Previous and Next under the topic, each naming the topic it opens. */
+.docs-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   margin-top: 16px;
+}
+
+.docs-pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.docs-pager-link.next {
+  grid-column: 2;
+  text-align: right;
+}
+
+.docs-pager-link:hover,
+.docs-pager-link:focus-visible {
+  border-color: var(--accent);
+}
+
+.docs-pager-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.docs-pager-title {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .docs-content h2 {

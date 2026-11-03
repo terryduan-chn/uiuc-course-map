@@ -774,7 +774,7 @@ button.plan-button:focus-visible {
 
 .plan-auto-panel {
   border-color: color-mix(in srgb, var(--planned) 45%, var(--border));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--planned) 10%, var(--surface)), var(--surface));
+  background: var(--surface);
 }
 
 .plan-auto-panel p {
@@ -1445,6 +1445,7 @@ button.plan-button:focus-visible {
 .plan-course-foot .plan-meta {
   flex: 1 1 auto;
   margin: 0;
+  overflow: hidden; /* a second Gen Ed tag is cut off rather than running under the buttons */
 }
 
 .plan-course-foot .plan-course-actions {

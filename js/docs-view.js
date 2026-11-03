@@ -1,6 +1,6 @@
-// The #docs page: the app's documentation (docs/docs.html), with a table of contents beside it.
-// Every section has its own address, #docs/<id>, so one click in the contents (or a shared
-// link) lands on it, and the contents follow along as you scroll.
+// The #docs page: the app's documentation (docs/docs.html), one topic at a time, with a table of
+// contents beside it and Previous / Next under it. Every topic has its own address, #docs/<id>,
+// so one click in the contents (or a shared link) opens it.
 
 /**
  * @param {object} options
@@ -10,29 +10,48 @@
  */
 const SIDEBAR_WIDTH = 861; // from this screen width on, the contents are a sidebar (matches docs.css)
 
+/**
+ * Which topic to show for an address, and the topics before and after it (null at either end).
+ * An address with no topic, or one that doesn't exist, shows the first.
+ */
+export function docsPage(ids, wantedId) {
+  const index = Math.max(0, ids.indexOf(wantedId));
+  return { current: ids[index], previous: ids[index - 1] ?? null, next: ids[index + 1] ?? null };
+}
+
 export function createDocsView({ element, meta }) {
   const view = document.getElementById("docs-view");
   let loaded = null; // the content, once fetched: { sections, links }
   let loading = null; // the fetch under way, so a second visit doesn't start another
   let wanted = null; // the section to show once the content has loaded
 
-  /** Marks one contents link as the section being read. */
-  function highlight(id) {
-    for (const [sectionId, link] of loaded.links) {
-      if (sectionId === id) link.setAttribute("aria-current", "true");
-      else link.removeAttribute("aria-current");
-    }
+  /** A Previous or Next link to a topic, named after it. */
+  function pagerLink(id, direction) {
+    const title = loaded.sections.find((section) => section.id === id).querySelector("h2").textContent;
+    return element(
+      "a",
+      { href: `#docs/${id}`, className: `docs-pager-link ${direction}` },
+      element("span", { className: "docs-pager-label", textContent: direction === "next" ? "Next →" : "← Previous" }),
+      element("span", { className: "docs-pager-title", textContent: title }),
+    );
   }
 
-  function scrollToSection(id) {
-    const section = loaded.sections.find((candidate) => candidate.id === id) ?? null;
-    if (section) {
-      section.scrollIntoView({ block: "start" });
-      highlight(id);
-    } else {
-      window.scrollTo({ top: 0 });
-      highlight(loaded.sections[0]?.id);
+  /** Shows one topic (the first if the address names none), marks it in the contents, and links its neighbors. */
+  function showSection(id) {
+    const page = docsPage(
+      loaded.sections.map((section) => section.id),
+      id,
+    );
+    for (const section of loaded.sections) section.hidden = section.id !== page.current;
+    for (const [sectionId, link] of loaded.links) {
+      if (sectionId === page.current) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
     }
+    loaded.pager.replaceChildren(
+      page.previous ? pagerLink(page.previous, "previous") : element("span"),
+      page.next ? pagerLink(page.next, "next") : element("span"),
+    );
+    window.scrollTo({ top: 0 });
   }
 
   /** Builds the page from docs.html: contents grouped like the sections, then the sections. */
@@ -79,6 +98,8 @@ export function createDocsView({ element, meta }) {
     contents.addEventListener("click", (event) => {
       if (event.target.closest("a") && !wide.matches) menu.open = false;
     });
+    const pager = element("nav", { className: "docs-pager", ariaLabel: "Previous and next topics" });
+    content.append(pager);
     view.replaceChildren(
       element(
         "header",
@@ -91,17 +112,7 @@ export function createDocsView({ element, meta }) {
       ),
       element("div", { className: "docs-layout" }, element("aside", { className: "docs-side" }, menu), content),
     );
-    loaded = { sections, links };
-
-    // The contents follow along: the section nearest the top of the screen is highlighted.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting);
-        if (visible.length > 0) highlight(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -70% 0px" },
-    );
-    for (const section of sections) observer.observe(section);
+    loaded = { sections, links, pager };
   }
 
   async function load() {
@@ -110,7 +121,7 @@ export function createDocsView({ element, meta }) {
       const response = await fetch("docs/docs.html");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       build(await response.text());
-      if (!view.hidden) scrollToSection(wanted);
+      if (!view.hidden) showSection(wanted);
     } catch (error) {
       console.error(error);
       view.replaceChildren(
@@ -124,11 +135,11 @@ export function createDocsView({ element, meta }) {
   }
 
   return {
-    /** Shows the docs, at a section's id or the top. */
+    /** Shows the docs, at a topic's id or the first topic. */
     show(sectionId) {
       view.hidden = false;
       wanted = sectionId;
-      if (loaded) scrollToSection(sectionId);
+      if (loaded) showSection(sectionId);
       else loading ??= load();
     },
     hide() {
