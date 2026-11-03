@@ -373,7 +373,7 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       "div",
       { className: "stats" },
       statTile(grades.average_gpa.toFixed(2), "average GPA"),
-      statTile(`${Math.round(grades.four_point_rate * 100)}%`, "got a 4.0 (A or A+)"),
+      statTile(`${(grades.four_point_rate * 100).toFixed(2)}%`, "got a 4.0 (A or A+)"),
       statTile(lastOffered, offered),
     );
   }

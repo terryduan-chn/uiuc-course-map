@@ -11,6 +11,7 @@ import { planButton } from "./plan-controls.js";
 import { createPlanView } from "./plan-view.js";
 import {
   buildGenEdQuery,
+  gradeText,
   buildSearchQuery,
   courseLevel,
   filterSubjects,
@@ -132,7 +133,9 @@ function courseListItem(course) {
       },
       element("span", { className: "code", textContent: `${course.subject} ${course.number}` }),
       element("span", { className: "title", textContent: course.title }),
-      course.gpa == null ? "" : element("span", { className: "gpa", textContent: `${course.gpa.toFixed(2)} GPA` }),
+      course.gpa == null
+        ? ""
+        : element("span", { className: "gpa", textContent: gradeText(course.gpa, course.fourRate) }),
     ),
   );
 }
@@ -627,6 +630,8 @@ function readMeta() {
     `since ${oldestTermSearched}.`;
   return {
     imported_at: imported,
+    grades_from: meta.grades_from,
+    grades_through: meta.grades_through,
     catalog_term: currentCatalogTerm,
     oldest_term_searched: oldestTermSearched,
     oldest_catalog_searched: termLabel(meta.oldest_catalog_searched),

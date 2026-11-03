@@ -5,6 +5,7 @@ import { savedAudit } from "./audit-view.js";
 import { focusKey, myCourses } from "./my-courses.js";
 import { requirementFor, slotKindNamed, slotNames, slotPart, swapOptions } from "./plan-insights.js";
 import { courseFacts, requirementCourses } from "./requirement-courses.js";
+import { gradeText } from "./search.js";
 import { currentTerm, nextMainTerm, previousMainTerm, termLabel, termOrder, termsAround } from "./terms.js";
 
 /** The next Fall or Spring to plan for: Spring 2027 while Fall 2026 is on. */
@@ -215,7 +216,7 @@ export function planControls({ element, rows, graph, id, extraClass = "" }) {
           className: `plan-menu-item swap ${option.ready ? "ready" : ""}`,
           textContent: [
             option.id,
-            option.gpa ? `${option.gpa.toFixed(2)} GPA` : "",
+            option.gpa ? gradeText(option.gpa, option.fourRate) : "",
             option.ready ? "" : "needs prerequisites",
             lost(option).length ? `reopens ${slotNames(lost(option))} slot` : "",
           ]

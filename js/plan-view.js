@@ -21,7 +21,7 @@ import {
   slotTitle,
 } from "./plan-insights.js";
 import { courseFacts, requirementCourses } from "./requirement-courses.js";
-import { creditHours, parseCourseCode, requirementLabel } from "./search.js";
+import { creditHours, gradeText, parseCourseCode, requirementLabel } from "./search.js";
 import { currentTerm, doneBy, nextMainTerm, planSemesters, termLabel, termOrder } from "./terms.js";
 
 /** The Fall or Spring the plan starts from by default: this one, or the next after a summer. */
@@ -47,7 +47,7 @@ export function createPlanView({ rows, element, getGraph }) {
   function courseInfo(ids) {
     if (ids.length === 0) return new Map();
     const found = rows(
-      `SELECT courses.subject || ' ' || courses.number AS id, title, credit_hours, average_gpa
+      `SELECT courses.subject || ' ' || courses.number AS id, title, credit_hours, average_gpa, four_point_rate
        FROM courses LEFT JOIN course_grades USING (subject, number)
        WHERE courses.subject || ' ' || courses.number IN (${ids.map(() => "?").join(", ")})`,
       ids,
@@ -116,8 +116,8 @@ export function createPlanView({ rows, element, getGraph }) {
       element(
         "dl",
         { className: "plan-facts" },
-        element("dt", { textContent: "Average GPA" }),
-        element("dd", { textContent: info?.average_gpa ? info.average_gpa.toFixed(2) : "no grade data" }),
+        element("dt", { textContent: "Grades" }),
+        element("dd", { textContent: gradeText(info?.average_gpa, info?.four_point_rate) }),
         element("dt", { textContent: "Runs" }),
         element("dd", { textContent: fact?.offered ? seasonsText(fact.seasons) : `not since ${offeredSince}` }),
       ),
@@ -321,7 +321,7 @@ export function createPlanView({ rows, element, getGraph }) {
             element("span", {
               className: "plan-slot-option-meta",
               textContent: [
-                option.gpa ? `${option.gpa.toFixed(2)} GPA` : "no grade data",
+                gradeText(option.gpa, option.fourRate),
                 sharedText(option),
                 alsoText(option),
                 option.ready ? "" : "needs prerequisites or another season",

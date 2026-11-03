@@ -208,7 +208,7 @@ export function swapOptions({ id, term, candidates, courses, graph, facts, fills
       const seasonOk = !term || seasons.size === 0 || seasons.has(term.slice(0, 2));
       const ready = seasonOk && missingRequirements(graph, option, before, same).length === 0;
       const keeps = fills.filter((kind) => slotKind(kind)?.codes.some((code) => facts.get(option).genEds.has(code)));
-      return { id: option, ready, keeps, gpa: facts.get(option).gpa };
+      return { id: option, ready, keeps, gpa: facts.get(option).gpa, fourRate: facts.get(option).fourRate };
     })
     .sort(
       (a, b) =>
@@ -241,7 +241,8 @@ export function slotOptions({ slot, candidates, courses, slots, graph, facts, li
       const ready = seasonOk && missingRequirements(graph, id, before, same).length === 0;
       // For a shared slot ("Humanities + Western"), which of its other Gen Eds the course meets too.
       const meetsAlso = (slot.also ?? []).filter((kind) => slotKind(kind).codes.some((code) => fact.genEds.has(code)));
-      return { id, ready, meetsAlso, covers: slotsFilledBy(fact, others).map((other) => other.id), gpa: fact.gpa };
+      const covers = slotsFilledBy(fact, others).map((other) => other.id);
+      return { id, ready, meetsAlso, covers, gpa: fact.gpa, fourRate: fact.fourRate };
     })
     .sort(
       (a, b) =>

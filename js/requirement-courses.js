@@ -47,7 +47,7 @@ export function requirementCourses(rows, part, { genEdLimit } = {}) {
 }
 
 /**
- * What the planner needs to know about every course, by id: { hours, gpa, offered, seasons, genEds }.
+ * What the planner needs to know about every course, by id: { hours, gpa, fourRate, offered, seasons, genEds }.
  * `offered` is whether it ran in any term the import searched (since Spring 2024); `seasons` holds
  * "FA" and/or "SP" when it ran in those (empty: only summer or winter).
  */
@@ -62,9 +62,9 @@ export function loadCourseFacts(rows) {
       genEds: new Set(),
     });
   }
-  for (const grade of rows("SELECT subject || ' ' || number AS id, average_gpa FROM course_grades")) {
+  for (const grade of rows("SELECT subject || ' ' || number AS id, average_gpa, four_point_rate FROM course_grades")) {
     const fact = facts.get(grade.id);
-    if (fact) fact.gpa = grade.average_gpa;
+    if (fact) Object.assign(fact, { gpa: grade.average_gpa, fourRate: grade.four_point_rate });
   }
   for (const offering of rows("SELECT subject || ' ' || number AS id, term FROM terms_offered")) {
     const fact = facts.get(offering.id);

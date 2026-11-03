@@ -209,7 +209,8 @@ export function buildGenEdQuery(codes, text = "") {
     params[":namePrefix"] = `${escapeLike(words)}%`;
   }
   const sql = `
-    SELECT courses.subject, courses.number, courses.title, course_grades.average_gpa AS gpa
+    SELECT courses.subject, courses.number, courses.title, course_grades.average_gpa AS gpa,
+      course_grades.four_point_rate AS fourRate
     FROM courses
     JOIN subjects ON subjects.code = courses.subject
     LEFT JOIN course_grades
@@ -221,4 +222,9 @@ export function buildGenEdQuery(codes, text = "") {
     ORDER BY gpa IS NULL, gpa DESC, courses.subject, courses.number
     LIMIT ${GEN_ED_MAX_RESULTS}`;
   return { sql, params };
+}
+
+/** A course's grades in words: "3.46 GPA · 45.12% got a 4.0". */
+export function gradeText(gpa, fourRate) {
+  return gpa == null ? "no grade data" : `${gpa.toFixed(2)} GPA · ${(fourRate * 100).toFixed(2)}% got a 4.0`;
 }
