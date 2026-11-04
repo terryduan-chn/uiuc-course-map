@@ -41,7 +41,7 @@ const SAMPLE_SLOTS = {
   "slot-2": { kind: "SBS", term: "FA27", auto: false, reason: null },
 };
 const SAMPLE_AUDIT = {
-  programName: "Computer Science, a sample audit",
+  programName: "Sample Computer Science",
   program: "",
   catalogYear: "202608",
   preparedOn: "",
