@@ -74,6 +74,12 @@ export function buildGraph(links, titles) {
     // Some groups lost courses the app doesn't have; never ask for more than remain.
     for (const group of node.requirements) group.required = Math.min(group.required, group.ids.length);
   }
+  // Two courses that each require the other (a lecture and its lab) are taken together.
+  for (const node of byId.values()) {
+    for (const group of node.requirements) {
+      if (group.ids.some((id) => byId.get(id)?.prerequisites.includes(node.id))) group.concurrent = true;
+    }
+  }
   return { nodes: [...byId.values()], links: graphLinks, byId };
 }
 

@@ -6,6 +6,7 @@ import { clearEverything, gpaCard, savedAudit } from "./audit-view.js";
 import { buildAutoPlan, TARGET_HOURS } from "./auto-plan.js";
 import { missingRequirements, readyNext } from "./graph-data.js";
 import { focusKey, keepFocus, myCourses } from "./my-courses.js";
+import { myMajor, planProgram, programDetails } from "./my-major.js";
 import { changeImpact, changeSummary, planChange } from "./plan-change.js";
 import { issueBadges, moveButton, nextTerm, planControls, planCourses, termChoices } from "./plan-controls.js";
 import {
@@ -25,7 +26,7 @@ import {
   slotShortLabel,
   slotTitle,
 } from "./plan-insights.js";
-import { courseFacts, requirementCourses } from "./requirement-courses.js";
+import { candidateLookup, courseFacts, requirementCourses } from "./requirement-courses.js";
 import { creditHours, gradeText, parseCourseCode, requirementLabel } from "./search.js";
 import { currentTerm, doneBy, nextMainTerm, planSemesters, termLabel, termOrder, termText } from "./terms.js";
 
@@ -526,23 +527,22 @@ export function createPlanView({ rows, element, getGraph }) {
 
   let lastResult = null; // what the latest Auto-plan did, shown until the page is left
 
-  /** Fills the plan from the saved audit (see auto-plan.js). Returns false without an audit. */
+  /** My major's name and hours to graduate, or null. */
+  const chosenMajor = () => (myMajor.path() ? programDetails(rows, myMajor.path()) : null);
+
+  /** Fills the plan from the saved audit (see auto-plan.js), else My major. Returns false with neither. */
   function generate() {
     const audit = savedAudit();
-    if (!audit) return false;
-    const lists = new Map();
-    const candidates = (part) => {
-      const key = JSON.stringify([part.title, part.selectFrom, part.notFrom]);
-      if (!lists.has(key))
-        lists.set(
-          key,
-          requirementCourses(rows, part).map(([id]) => id),
-        );
-      return lists.get(key);
-    };
+    if (!audit) {
+      const major = chosenMajor();
+      if (!major) return false;
+      lastResult = { ...planProgram({ rows, graph: getGraph(), path: major.path }), program: major.name };
+      keepFocus(draw);
+      return true;
+    }
     const result = buildAutoPlan({
       sections: audit.sections,
-      candidates,
+      candidates: candidateLookup(rows),
       facts: courseFacts(rows),
       graph: getGraph(),
       taken: new Set(myCourses.ids("taken")),
@@ -565,22 +565,32 @@ export function createPlanView({ rows, element, getGraph }) {
     const generated =
       myCourses.ids("planned").filter((id) => myCourses.isAuto(id)).length +
       myCourses.slots().filter((slot) => slot.auto).length;
-    if (!audit) {
+    const major = audit ? null : chosenMajor();
+    if (!audit && !major) {
       return element(
         "div",
         { className: "plan-auto-panel" },
         element("h3", { textContent: tr("Auto-plan", "自动规划") }),
         element("p", {
           textContent: tr(
-            "Upload your degree audit and the plan fills itself with courses for every requirement you still need.",
-            "上传学位 audit 后，计划会自动填入你还需要的每项要求对应的课程。",
+            "Choose your major to plan the whole degree, or upload your audit for a plan built on what you still need.",
+            "选好专业就能规划整个学位；上传 audit 后，计划会按你还缺的要求来排。",
           ),
         }),
-        element("a", {
-          href: "#audit",
-          className: "btn btn-ghost",
-          textContent: tr("Go to Audit →", "前往学位审核 →"),
-        }),
+        element(
+          "div",
+          { className: "plan-auto-actions" },
+          element("a", {
+            href: "#majors",
+            className: "btn btn-primary",
+            textContent: tr("Choose a major →", "选择专业 →"),
+          }),
+          element("a", {
+            href: "#audit",
+            className: "btn btn-ghost",
+            textContent: tr("Go to Audit →", "前往学位审核 →"),
+          }),
+        ),
       );
     }
     return element(
@@ -590,19 +600,31 @@ export function createPlanView({ rows, element, getGraph }) {
         "h3",
         {},
         tr("Auto-plan", "自动规划"),
-        element("span", {
-          className: "plan-auto-source",
-          textContent: tr(
-            ` from your ${audit.programName ?? "degree"} audit`,
-            `（来自你的 ${audit.programName ?? "学位"} audit）`,
-          ),
-        }),
+        audit
+          ? element("span", {
+              className: "plan-auto-source",
+              textContent: tr(
+                ` from your ${audit.programName ?? "degree"} audit`,
+                `（来自你的 ${audit.programName ?? "学位"} audit）`,
+              ),
+            })
+          : element(
+              "span",
+              { className: "plan-auto-source" },
+              tr(" for ", "：") + " ",
+              element("a", { href: `#majors/${major.path}`, textContent: major.name }),
+            ),
       ),
       element("p", {
-        textContent: tr(
-          `Fills ${termLabel(nextTerm())} onward with courses for every unmet requirement, about ${TARGET_HOURS} hours a semester. Gen Eds become slots you pick a course for. Your own planned courses stay.`,
-          `从 ${termLabel(nextTerm())} 起，为每项未满足的要求排课，每学期约 ${TARGET_HOURS} 学分。通识要求会变成空位，由你自己选课。你自己计划的课保持不变。`,
-        ),
+        textContent: audit
+          ? tr(
+              `Fills ${termLabel(nextTerm())} onward with courses for every unmet requirement, about ${TARGET_HOURS} hours a semester. Gen Eds become slots you pick a course for. Your own planned courses stay.`,
+              `从 ${termLabel(nextTerm())} 起，为每项未满足的要求排课，每学期约 ${TARGET_HOURS} 学分。通识要求会变成空位，由你自己选课。你自己计划的课保持不变。`,
+            )
+          : tr(
+              `Fills ${termLabel(nextTerm())} to graduation from the catalog, about ${TARGET_HOURS} hours a semester. Gen Eds and electives become slots you pick a course for. Your own planned courses stay.`,
+              `根据目录从 ${termLabel(nextTerm())} 一直排到毕业，每学期约 ${TARGET_HOURS} 学分。通识和选修课会变成空位，由你自己选课。你自己计划的课保持不变。`,
+            ),
       }),
       element(
         "div",
@@ -778,10 +800,12 @@ export function createPlanView({ rows, element, getGraph }) {
   /** The degree at a glance: hours earned / planned / short, requirements, last semester. */
   function progressBar(courses, info, slots) {
     const audit = savedAudit();
+    const major = audit ? null : chosenMajor();
     const progress = degreeProgress({
       courses: [...courses, ...slots.map((slot) => ({ id: slot.id, status: "planned", term: slot.term }))],
       hoursOf: (id) => (id.startsWith("slot-") ? SLOT_HOURS : hoursOf(id, info)),
       audit,
+      majorHours: major?.totalHours,
     });
     const percent = (hours) => `${Math.min(100, (hours / progress.total) * 100).toFixed(1)}%`;
     const shown = Math.min(progress.planned, Math.max(0, progress.total - progress.earned));
@@ -834,10 +858,12 @@ export function createPlanView({ rows, element, getGraph }) {
               `Requirements on your audit: ${progress.requirements.done} of ${progress.requirements.all} done · `,
               `audit 上的要求：${progress.requirements.all} 项已完成 ${progress.requirements.done} 项 · `,
             )
-          : tr(
-              "No audit yet, so 120 hours (most UIUC degrees need 120–128) · ",
-              "还没有 audit，先按 120 学分算（UIUC 多数学位需要 120–128）· ",
-            ),
+          : major?.totalHours
+            ? tr(`${major.name} needs ${major.totalHours} hours · `, `${major.name} 需要 ${major.totalHours} 学分 · `)
+            : tr(
+                "No audit yet, so 120 hours (most UIUC degrees need 120–128) · ",
+                "还没有 audit，先按 120 学分算（UIUC 多数学位需要 120–128）· ",
+              ),
         element("strong", { textContent: finish }),
         progress.short > 0 && when ? tr(` · last planned semester ${when}`, ` · 最后一个计划学期 ${when}`) : "",
       ),

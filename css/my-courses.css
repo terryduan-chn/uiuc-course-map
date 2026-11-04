@@ -11,7 +11,7 @@
   margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -101,7 +101,7 @@
 
 .plan-header h2 {
   margin: 8px 0 4px;
-  font-size: 1.8rem;
+  font-size: var(--page-title);
 }
 
 .plan-title-row {
@@ -192,7 +192,7 @@
 .plan-ready {
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -268,7 +268,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--muted);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-raised);
   animation: rise-in 0.3s var(--ease) both;
 }
@@ -359,7 +359,7 @@
 
 .audit-header h2 {
   margin: 8px 0 4px;
-  font-size: 1.8rem;
+  font-size: var(--page-title);
 }
 
 .audit-lead {
@@ -400,7 +400,7 @@
   gap: 4px;
   padding: 20px;
   border: 2px dashed var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
   cursor: pointer;
   transition:
@@ -443,9 +443,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px;
+  padding: var(--box-padding);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -472,9 +472,9 @@
 
 .audit-section,
 .audit-met {
-  padding: 14px 18px;
+  padding: var(--box-padding);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -530,7 +530,7 @@
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--ready);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-raised);
 }
 
@@ -715,7 +715,7 @@ button.plan-button:focus-visible {
   margin: 0;
   padding: 8px;
   border: 1px dashed var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   color: var(--muted);
   font-size: 0.85rem;
   text-align: center;
@@ -761,9 +761,9 @@ button.plan-button:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
+  padding: var(--box-padding);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -803,7 +803,7 @@ button.plan-button:focus-visible {
 /* What the latest Auto-plan did. */
 .plan-result {
   margin-bottom: 20px;
-  padding: 14px 18px;
+  padding: var(--box-padding);
   border: 1px solid color-mix(in srgb, var(--planned) 45%, var(--border));
   border-left: 4px solid var(--planned);
   border-radius: 12px;
@@ -981,9 +981,9 @@ button.plan-button:focus-visible {
 
 .plan-progress {
   margin-bottom: 18px;
-  padding: 14px 18px;
+  padding: var(--box-padding);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
@@ -1424,7 +1424,7 @@ button.plan-button:focus-visible {
 .audit-plan-note {
   padding: 6px 10px;
   border: 1px dashed var(--accent);
-  border-radius: 10px;
+  border-radius: var(--radius);
   color: var(--text);
 }
 
@@ -1475,9 +1475,9 @@ button.plan-button:focus-visible {
 /* ---- Audit: "What's left" at the top, and how far the plan goes toward each requirement ---- */
 
 .audit-overview {
-  padding: 14px 18px;
+  padding: var(--box-padding);
   border: 1px solid var(--accent);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent) 6%, var(--surface));
 }
 
@@ -1516,7 +1516,7 @@ button.plan-button:focus-visible {
   width: 100%;
   padding: 7px 10px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: none;
   color: var(--text);
   font: inherit;
@@ -1592,7 +1592,7 @@ button.plan-button:focus-visible {
 .audit-upload-fold {
   padding: 10px 16px;
   border: 1px dashed var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
 }
 
 .audit-upload-fold[open] summary {
@@ -1660,7 +1660,7 @@ button.plan-button:focus-visible {
 .my-gpa-item {
   padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 

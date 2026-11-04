@@ -46,6 +46,20 @@ export function requirementCourses(rows, part, { genEdLimit } = {}) {
   return [...found];
 }
 
+/** A `candidates` function for Auto-plan: the course ids that can meet a part, looked up once each. */
+export function candidateLookup(rows) {
+  const lists = new Map();
+  return (part) => {
+    const key = JSON.stringify([part.title, part.selectFrom, part.notFrom]);
+    if (!lists.has(key))
+      lists.set(
+        key,
+        requirementCourses(rows, part).map(([id]) => id),
+      );
+    return lists.get(key);
+  };
+}
+
 /**
  * What the planner needs to know about every course, by id: { hours, gpa, fourRate, offered, seasons, genEds }.
  * `offered` is whether it ran in any term the import searched (since Spring 2024); `seasons` holds

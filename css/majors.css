@@ -7,25 +7,27 @@
 
 .majors-view h2 {
   margin: 8px 0 4px;
-  font-size: 1.8rem;
+  font-size: var(--page-title);
 }
 
-.major-search {
-  width: min(560px, 100%);
-  height: var(--control);
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-}
-
-.major-tools {
-  display: flex;
+.majors-view .subjects-tools {
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+}
+
+/* Here the note belongs to the page: it stays under the buttons, not over the list. */
+.majors-view .plan-change {
+  position: static;
+  width: auto;
+  max-height: none;
+  margin-bottom: 16px;
+  transform: none;
+  box-shadow: none;
+}
+
+/* A focus area's whole name shows: there are few cards and the names are long. */
+.major-section .subject-card .name {
+  display: block;
+  min-height: 0;
 }
 
 /* Jump to a college or letter; stays below the top bar while the list scrolls. */
@@ -71,7 +73,66 @@
 }
 
 .major-college {
+  margin-bottom: 22px;
   scroll-margin-top: 130px; /* clears the top bar and the jump bar */
+}
+
+.major-college h3,
+.major-section h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+/* A focus area is a button shaped like a card; the picked one stays lit. */
+button.subject-card {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.subject-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.major-section {
+  margin-bottom: 16px;
+}
+
+.major-section > .major-note {
+  margin: 0 0 10px;
+}
+
+.major-focus-courses {
+  margin-top: 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.major-focus-courses ul {
+  margin: 0;
+}
+
+.major-plan {
+  margin-bottom: 16px;
+  padding: var(--box-padding);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.major-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.major-plan > .major-note {
+  margin: 0;
 }
 
 .major-meta {
@@ -79,35 +140,12 @@
   color: var(--muted);
 }
 
-.major-college,
-.major-links,
 .major-requirements {
   margin-bottom: 14px;
-  padding: 14px 18px;
+  padding: var(--box-padding);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
-}
-
-.major-college h3,
-.major-links h3 {
-  margin: 0 0 10px;
-  font-size: 1.05rem;
-}
-
-.major-college ul,
-.major-links ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 6px 20px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.major-college li {
-  display: flex;
-  flex-direction: column;
 }
 
 .major-note {
@@ -122,14 +160,6 @@
 
 .major-progress {
   margin: 0 0 10px;
-}
-
-.major-plan-all {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-  margin-bottom: 12px;
 }
 
 .major-requirements h3 {
@@ -219,6 +249,22 @@
 }
 
 @media (max-width: 760px) {
+  /* One row to swipe along: fifteen colleges would otherwise fill the first screen. */
+  .major-jumps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .major-jumps button {
+    flex: none;
+  }
+
+  .major-section .subject-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: auto;
+    gap: 8px;
+  }
+
   .major-option {
     grid-template-columns: minmax(0, 1fr) auto;
   }

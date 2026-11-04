@@ -45,6 +45,8 @@ const isGenEdPart = (part) => part.selectFrom.length === 0 && genEdCodesFor(part
  * @param {string} input.startTerm the first semester to fill, e.g. "SP27"
  * @param {boolean} [input.genEdSlots] leave Gen Eds as "pick a course" slots instead of choosing courses
  * @param {{kind: string, also?: string[], term: string|null}[]} [input.slots] the student's own Gen Ed slots
+ * @param {{kind: string, reason: string}[]} [input.electiveSlots] slots for requirements the student picks a course for
+ * @param {string[]} [input.coming] courses the sections will add, so none is planned around as a missing prerequisite
  * @returns {{
  *   courses: {id: string, term: string, reason: string}[],
  *   scheduled: {id: string, term: string}[],
@@ -65,6 +67,8 @@ export function buildAutoPlan({
   targetHours = TARGET_HOURS,
   genEdSlots = false,
   slots = [],
+  electiveSlots = [],
+  coming = [],
 }) {
   const mine = new Set(planned.map((course) => course.id));
   const picked = new Map(); // new course id -> why it's in the plan
@@ -74,9 +78,10 @@ export function buildAutoPlan({
   const slotNeeds = new Map(); // Gen Ed slot kind -> { count, reason }, turned into slots after every part
   // The student's own slots, and which Gen Eds each has counted toward so far.
   const ownSlots = slots.map((slot) => ({ ...slot, kinds: [slot.kind, ...(slot.also ?? [])], usedFor: new Set() }));
-  const have = () => new Set([...taken, ...mine, ...picked.keys()]);
   const hoursOf = (id) => facts.get(id)?.hours ?? 3;
   const usable = (id) => Boolean(facts.get(id)?.offered) && !taken.has(id);
+  const expected = coming.filter(usable);
+  const have = () => new Set([...taken, ...mine, ...expected, ...picked.keys()]);
 
   /** The courses to add so that `id`'s prerequisites are met, following chains back. */
   function prerequisitesToAdd(id, known, depth = 0) {
@@ -264,6 +269,10 @@ export function buildAutoPlan({
     for (let n = 0; n < count; n += 1) newSlots.set(`slot:${kind}:${newSlots.size}`, { kind, also: [], reason });
   }
 
+  for (const { kind, reason } of electiveSlots) {
+    newSlots.set(`slot:${kind}:${newSlots.size}`, { kind, also: [], reason });
+  }
+
   // ---- Free electives: slots for the hours a degree needs beyond its requirements (128 in all) ----
   const plannedHours = () =>
     [...mine, ...picked.keys()].reduce((sum, id) => sum + hoursOf(id), 0) + (slots.length + newSlots.size) * SLOT_HOURS;
@@ -323,6 +332,8 @@ export function buildAutoPlan({
     return fixedTerm.get(id) === semesters[index];
   }
 
+  const needsCourse = (id, other) => Boolean(graph.byId.get(id)?.prerequisites.includes(other));
+
   /**
    * Every prerequisite group that the plan can meet is met before semester `index`, or during
    * it for "concurrent registration" groups.
@@ -332,7 +343,10 @@ export function buildAutoPlan({
       const inPlan = group.ids.filter((member) => universe.has(member));
       if (inPlan.length === 0) continue; // nothing in the plan can meet it (e.g. "consent of instructor")
       const needed = Math.min(group.required, inPlan.length);
-      const met = (member) => doneBefore(member, index) || (group.concurrent && doneDuring(member, index));
+      // Two courses that need each other (a lecture and its lab) go in together, so one has to go first.
+      const partner = (member) => placing.has(member) && !placed.has(member) && needsCourse(member, id);
+      const met = (member) =>
+        doneBefore(member, index) || (group.concurrent && (doneDuring(member, index) || partner(member)));
       if (inPlan.filter(met).length < needed) return false;
     }
     return true;
@@ -350,7 +364,12 @@ export function buildAutoPlan({
     return value;
   }
   const genEdOnly = (id) => genEdPicks.has(id);
-  const priority = (a, b) => height(b) - height(a) || Number(genEdOnly(a)) - Number(genEdOnly(b)) || a.localeCompare(b);
+  const electiveOnly = (id) => id.startsWith("slot:FREE");
+  const priority = (a, b) =>
+    height(b) - height(a) ||
+    Number(genEdOnly(a)) - Number(genEdOnly(b)) ||
+    Number(electiveOnly(a)) - Number(electiveOnly(b)) ||
+    a.localeCompare(b);
 
   // Fill one semester at a time: of the courses whose prerequisites are done and that run that
   // season, the ones starting the longest chains go first; Gen Eds fill what's left. A course

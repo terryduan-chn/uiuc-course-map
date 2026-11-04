@@ -7,7 +7,7 @@
 
 .docs-header h1 {
   margin: 8px 0 4px;
-  font-size: 1.9rem;
+  font-size: var(--page-title);
 }
 
 .docs-lead {
@@ -81,9 +81,9 @@
 }
 
 .docs-content section {
-  padding: 20px 22px;
+  padding: var(--box-padding);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
   scroll-margin-top: 84px; /* a contents link lands below the sticky top bar */
 }

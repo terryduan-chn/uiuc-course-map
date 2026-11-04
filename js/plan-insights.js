@@ -19,6 +19,7 @@ export const GEN_ED_SLOTS = [
   { key: "NW", name: "Non-Western Cultures", short: "Non-Western", codes: ["1NW"] },
   { key: "US", name: "U.S. Minority Cultures", short: "US Minority", codes: ["1US"] },
   { key: "COMP", name: "Advanced Composition", short: "Adv Comp", codes: ["1CLL"] },
+  { key: "COMP1", name: "Composition I", short: "Comp I", codes: ["1FC1"] },
   // Not a Gen Ed: any course, for the hours a degree needs beyond its requirements (128 in all).
   { key: "FREE", name: "Free elective", short: "Free elective", codes: [] },
 ];
@@ -32,6 +33,7 @@ const SLOT_CHINESE = {
   NW: ["非西方文化", "非西方"],
   US: ["美国少数族裔文化", "美国少数族裔"],
   COMP: ["高级写作", "高级写作"],
+  COMP1: ["写作 I", "写作 I"],
   FREE: ["自由选修", "自由选修"],
 };
 // `name` stays English: saved plans and audit titles are matched by it. These are what the page shows.
@@ -68,7 +70,8 @@ export function slotKindsOf(fact) {
 export const slotTitle = (slot) => slotNames([slot.kind, ...(slot.also ?? [])]);
 
 /** The slot kind a Gen Ed's name stands for ("Humanities & the Arts" -> its GEN_ED_SLOTS entry), or null. */
-export const slotKindNamed = (name) => GEN_ED_SLOTS.find((slot) => slot.name === name) ?? null;
+export const slotKindNamed = (name) =>
+  GEN_ED_SLOTS.find((slot) => slot.name.toLowerCase() === name.toLowerCase()) ?? null;
 
 /**
  * Why a course is in the plan, for the page. Saved reasons are English, so a plan made in one
@@ -80,6 +83,8 @@ export function reasonText(reason) {
     const prerequisiteFor = part.match(/^Prerequisite for (.+)$/);
     if (prerequisiteFor) return tr(part, `${prerequisiteFor[1]} 的先修课`);
     if (part === "Free electives (hours to graduate)") return tr(part, "自由选修（凑够毕业学分）");
+    const focusArea = part.match(/^Focus Area: (.+)$/);
+    if (focusArea) return tr(part, `重点方向：${focusArea[1]}`);
     const kind = slotKindNamed(part);
     return kind ? slotLabel(kind) : part;
   };
@@ -193,10 +198,10 @@ export function semesterLoad(hours) {
  * included, else the taken courses), planned, still short; requirements done; and the last
  * semester with a planned course.
  */
-export function degreeProgress({ courses, hoursOf, audit }) {
+export function degreeProgress({ courses, hoursOf, audit, majorHours = null }) {
   const sections = audit ? requirementSections(audit) : [];
   const totalSection = sections.find((section) => /MINIMUM OF \d+ HOURS/.test(section.title));
-  const total = totalSection ? Number(totalSection.title.match(/MINIMUM OF (\d+) HOURS/)[1]) : 120;
+  const total = totalSection ? Number(totalSection.title.match(/MINIMUM OF (\d+) HOURS/)[1]) : (majorHours ?? 120);
   const takenHours = courses
     .filter((course) => course.status === "taken")
     .reduce((sum, course) => sum + hoursOf(course.id), 0);

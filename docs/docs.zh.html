@@ -105,32 +105,41 @@
 <section id="majors" data-group="使用应用">
   <h2>专业</h2>
   <p>
-    <strong>专业</strong>页按学院列出所有本科专业和方向。它不需要 audit，所以如果你还在选专业，或者还没上传
-    audit，可以从这里开始。
+    <strong>专业</strong>页列出所有本科专业和方向，还能根据目录规划整个学位。它不需要
+    audit，所以如果你还在选专业，或者还没上传 audit，可以从这里开始。
   </p>
   <ol>
     <li>
       按名称搜索，或从列表里打开一个专业。搜索方向也能找到它所属的专业。列表可以<strong>按学院</strong>或按
-      <strong>A–Z</strong> 排列，用上方的跳转栏可以跳到某个学院或字母。
+      <strong>A–Z</strong>
+      排列，也可以显示成<strong>卡片</strong>或<strong>列表</strong>，用上方的跳转栏可以跳到某个学院或字母。
     </li>
     <li>
       每个专业页都按目录原本的顺序和措辞显示要求。已修的行是绿色，已计划的行是蓝色，<em>现在可修</em>表示你已满足这门课的先修要求。
     </li>
     <li>点一门课上的<strong>+ 计划</strong>，就能把它放进“我的计划”的下学期。</li>
     <li>
-      <strong>把必修课全部加入计划</strong
-      >会从下学期起，按先修顺序加入每门必修课，以及它们需要的先修课。选课列表、通识和选修课留给你自己选，<strong>撤销</strong>可以把它们全部取消。
+      如果专业下面有方向，先打开一个方向，因为每个方向的要求都不一样。Computer Science
+      没有方向，而是有<strong>重点方向</strong>：选一个就能看到它的课程，规划时也会用它。
     </li>
+    <li>
+      <strong>规划我的学位</strong
+      >会把它设为你的专业，并从下学期一直排到毕业：必修课、列表里选出的课，以及通识和选修空位。你自己计划的课保持不变，<strong>撤销</strong>可以恢复原来的计划。<strong>设为我的专业</strong>只是记下你的选择，之后可以在“我的计划”里规划。
+    </li>
+    <li><strong>只加必修课</strong>只加入必修课和它们需要的先修课，其余的留给你。</li>
   </ol>
+  <p>
+    计划会尽量读懂目录里的列表，读不懂的也会告诉你：有些页面的选项是嵌套的，比如主攻领域下面还有各自的列表。计划排到学位所需的学分就会停下，并告诉你哪些部分要到官方页面自己选。它默认你可以直接修微积分，并且已经满足外语要求。
+  </p>
   <p class="docs-note">
-    这不是官方结果：这里只是目录原文加上你的课程标记，不算学位审核。“select two”这类可选项不会替你判断。最终以你的<a
+    这不是官方结果：这里只是目录原文加上你的课程标记，不算学位审核。根据目录排出的计划只是一个起点。最终以你的<a
       href="#docs/degree-audit"
       >学位 audit</a
     >
     和 advisor 为准。
   </p>
   <figure data-demo="#majors/engineering/computer-science-bs">
-    <figcaption>示例计划下的 Computer Science：点一门课上的“+ 计划”试试。</figcaption>
+    <figcaption>示例计划下的 Computer Science：选一个重点方向，再点“规划我的学位”。</figcaption>
   </figure>
 </section>
 
@@ -203,7 +212,10 @@
 <section id="auto-plan" data-group="使用应用">
   <h2>自动规划</h2>
   <p>
-    上传<a href="#docs/degree-audit">学位 audit</a>
+    没有 audit 时，选好<a href="#docs/majors">专业</a>，自动规划就会改为根据目录规划学位。 上传<a
+      href="#docs/degree-audit"
+      >学位 audit</a
+    >
     后，“我的计划”里的<strong>自动规划我的学位</strong>会从下学期起，为你还需要的每项要求排课，每学期约 15 学分。
   </p>
   <ul>

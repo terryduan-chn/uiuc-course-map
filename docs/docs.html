@@ -117,13 +117,15 @@
 <section id="majors" data-group="Using the app">
   <h2>Majors</h2>
   <p>
-    <strong>Majors</strong> lists every undergraduate major and concentration, by college. It works without an audit, so
-    it's a good place to start if you're choosing a major or haven't uploaded one.
+    <strong>Majors</strong> lists every undergraduate major and concentration, and plans a whole degree from the
+    catalog. It works without an audit, so it's a good place to start if you're choosing a major or haven't uploaded
+    one.
   </p>
   <ol>
     <li>
       Search by name, or open a major from the list. Searching a concentration finds its major too. Arrange the list
-      <strong>By college</strong> or <strong>A–Z</strong>, and use the bar above it to jump to a college or letter.
+      <strong>By college</strong> or <strong>A–Z</strong>, show it as <strong>Cards</strong> or a <strong>List</strong>,
+      and use the bar above it to jump to a college or letter.
     </li>
     <li>
       Each page shows the requirements in the catalog's own order and wording. Lines you've taken are green, lines
@@ -131,18 +133,32 @@
     </li>
     <li>Press <strong>+ Plan</strong> on a course to put it in next semester on My plan.</li>
     <li>
-      <strong>Plan all required courses</strong> adds every required course from next semester on, in prerequisite
-      order, along with any prerequisites they need. Lists to choose from, Gen Eds and electives stay for you to pick,
-      and <strong>Undo</strong> takes them back out.
+      If a major has concentrations, open one first: each has its own requirements. Computer Science has
+      <strong>focus areas</strong> instead. Pick one to see its courses, and the plan uses it.
+    </li>
+    <li>
+      <strong>Plan my degree</strong> makes this your major and fills next semester to graduation: required courses,
+      picks from the lists, and slots for Gen Eds and electives. Courses you planned yourself stay, and
+      <strong>Undo</strong> puts the plan back. <strong>Make this my major</strong> only remembers your choice, so My
+      plan can plan it later.
+    </li>
+    <li>
+      <strong>Add only the required</strong> adds just the required courses and the prerequisites they need, leaving
+      everything else for you.
     </li>
   </ol>
+  <p>
+    The plan reads the catalog's lists as best it can, and says what it couldn't: some pages nest options, like a
+    primary field with its own lists. It stops at the hours the degree needs and tells you which parts to pick from the
+    official page. It assumes you're ready for calculus and already meet the language requirement.
+  </p>
   <p class="docs-note">
-    This is unofficial: it's the catalog's wording with your courses marked, not a degree check. Lines like "select two"
-    aren't worked out for you. Your
+    This is unofficial: it's the catalog's wording with your courses marked, not a degree check. A plan from a catalog
+    page is a starting point. Your
     <a href="#docs/degree-audit">degree audit</a> and advisor have the final word.
   </p>
   <figure data-demo="#majors/engineering/computer-science-bs">
-    <figcaption>Computer Science on a sample plan: press + Plan on a course.</figcaption>
+    <figcaption>Computer Science on a sample plan: pick a focus area, then press Plan my degree.</figcaption>
   </figure>
 </section>
 
@@ -228,6 +244,7 @@
 <section id="auto-plan" data-group="Using the app">
   <h2>Auto-plan</h2>
   <p>
+    With no audit, choose a <a href="#docs/majors">major</a> and Auto-plan plans the degree from the catalog instead.
     With a <a href="#docs/degree-audit">degree audit</a> uploaded, <strong>Auto-plan my degree</strong> on My plan fills
     every semester from next semester on with courses for each requirement you still need, at about 15 hours a semester.
   </p>
