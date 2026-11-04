@@ -5,6 +5,7 @@ import { clearEverything, gpaCard, savedAudit } from "./audit-view.js";
 import { buildAutoPlan, TARGET_HOURS } from "./auto-plan.js";
 import { missingRequirements, readyNext } from "./graph-data.js";
 import { focusKey, keepFocus, myCourses } from "./my-courses.js";
+import { changeImpact, changeSummary, planChange } from "./plan-change.js";
 import { issueBadges, moveButton, nextTerm, planControls, planCourses, termChoices } from "./plan-controls.js";
 import {
   courseIssues,
@@ -38,6 +39,8 @@ const SLOT_CANDIDATES = 300; // Gen Ed courses looked at when picking one for a 
  */
 export function createPlanView({ rows, element, getGraph }) {
   const section = document.getElementById("plan-view");
+  let savedPlan = { courses: planCourses(), snapshot: myCourses.snapshot() }; // the plan before the next change
+  let lastChange = null; // the latest move or removal: { summary, undo, affected }
   const expanded = new Set(); // course cards opened to show details, kept across redraws
   const [offeredSince] = rows("SELECT value FROM meta WHERE key = 'oldest_term_searched'").map((row) => {
     const [year, season] = row.value.split("/");
@@ -232,7 +235,11 @@ export function createPlanView({ rows, element, getGraph }) {
     // Its line and its buttons share one row, so every card in a semester is the same small size.
     return draggableCard(
       id,
-      { className: `plan-course ${status}${myCourses.isAuto(id) ? " auto" : ""}${issues.length ? " has-issues" : ""}` },
+      {
+        className: `plan-course ${status}${myCourses.isAuto(id) ? " auto" : ""}${issues.length ? " has-issues" : ""}${
+          lastChange?.affected.has(id) ? " affected" : ""
+        }`,
+      },
       head,
       remove,
       element("div", { className: "plan-course-foot" }, meta, planControls({ element, rows, graph, id })),
@@ -583,6 +590,46 @@ export function createPlanView({ rows, element, getGraph }) {
           onclick: () => now.forEach((course) => myCourses.setInProgress(course.id)),
         }),
         "mark-in-progress",
+      ),
+    );
+  }
+
+  /** What the latest move or removal did to the rest of the plan, with Undo. */
+  function changeNote() {
+    if (!lastChange) return "";
+    const { title, lines } = lastChange.summary;
+    return element(
+      "section",
+      { className: "plan-change", role: "status" },
+      element(
+        "div",
+        { className: "plan-change-text" },
+        element("strong", { textContent: title }),
+        ...lines.map((line) => element("p", { textContent: line })),
+      ),
+      element(
+        "div",
+        { className: "plan-change-actions" },
+        focusKey(
+          element("button", {
+            type: "button",
+            className: "btn btn-primary",
+            textContent: "Undo",
+            onclick: () => myCourses.restore(lastChange.undo),
+          }),
+          "plan-change-undo",
+        ),
+        element("button", {
+          type: "button",
+          className: "plan-remove",
+          textContent: "✕",
+          title: "Close this note",
+          ariaLabel: "Close this note",
+          onclick: () => {
+            lastChange = null;
+            keepFocus(draw);
+          },
+        }),
       ),
     );
   }
@@ -945,7 +992,12 @@ export function createPlanView({ rows, element, getGraph }) {
                   // Auto-plan's note goes with the plan (set first: clearing redraws the page).
                   const shown = lastResult;
                   lastResult = null;
-                  if (!clearEverything()) lastResult = shown;
+                  if (!clearEverything()) {
+                    lastResult = shown;
+                    return;
+                  }
+                  lastChange = null; // Undo can't bring the audit back, so it isn't offered
+                  keepFocus(draw);
                 },
               })
             : "",
@@ -961,6 +1013,7 @@ export function createPlanView({ rows, element, getGraph }) {
       ),
       oldSaveNote(courses),
       resultNote(),
+      changeNote(),
       element(
         "div",
         { className: "plan-semesters" },
@@ -982,7 +1035,35 @@ export function createPlanView({ rows, element, getGraph }) {
     );
   }
 
+  /** After a change on this page, works out what one course moved or removed did to the plan. */
+  function noticeChange() {
+    const before = savedPlan;
+    savedPlan = { courses: planCourses(), snapshot: myCourses.snapshot() };
+    // Undo (or moving the course back by hand) is the plan as it was: there's nothing to report.
+    const undone = savedPlan.snapshot === lastChange?.undo;
+    const change = section.hidden || undone ? null : planChange(before.courses, savedPlan.courses);
+    if (!change) {
+      lastChange = null;
+      return;
+    }
+    const impact = changeImpact({
+      change,
+      before: before.courses,
+      after: savedPlan.courses,
+      graph: getGraph(),
+      facts: courseFacts(rows),
+      offeredSince,
+      slotTerms: myCourses.slots().map((slot) => slot.term),
+    });
+    lastChange = {
+      summary: changeSummary(impact),
+      undo: before.snapshot,
+      affected: new Set([...impact.delayed, ...impact.blocked].map((course) => course.id)),
+    };
+  }
+
   myCourses.onChange(() => {
+    noticeChange();
     if (!section.hidden) keepFocus(draw);
   });
 
@@ -993,7 +1074,8 @@ export function createPlanView({ rows, element, getGraph }) {
     },
     hide() {
       section.hidden = true;
-      lastResult = null; // the note is about the moment it was made
+      lastResult = null; // the notes are about the moment they were made
+      lastChange = null;
     },
     /** Auto-plans from the saved audit (used by the Audit page's "Make a plan" button). */
     generate,

@@ -213,6 +213,17 @@ export const myCourses = {
     this.setMany(courses);
   },
 
+  /** The whole plan as it is now, to put back later with restore. */
+  snapshot: () => JSON.stringify({ courses: [...entries], slots: [...slots] }),
+
+  /** Puts the plan back exactly as a snapshot had it. */
+  restore(snapshot) {
+    const saved = JSON.parse(snapshot);
+    entries = new Map(saved.courses);
+    slots = new Map(saved.slots);
+    save();
+  },
+
   /** Course ids with this status (or all of them), sorted. */
   ids: (status) =>
     [...entries]

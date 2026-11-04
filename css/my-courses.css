@@ -95,7 +95,8 @@
 /* ---- The #plan page ---- */
 
 .plan-view {
-  animation: rise-in 0.35s var(--ease) both;
+  /* backwards, not both: a transform left on after the animation would pin .plan-change to the page, not the screen */
+  animation: rise-in 0.35s var(--ease) backwards;
 }
 
 .plan-header h2 {
@@ -1677,4 +1678,48 @@ button.plan-button:focus-visible {
 .my-gpa strong {
   color: var(--text);
   font-size: 1.25rem;
+}
+
+/* What the latest move or removal did: pinned to the bottom of the screen, so it's in view wherever
+   you are in the plan and appearing doesn't push the cards out from under the pointer. */
+.plan-change {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  z-index: 40;
+  display: flex;
+  width: min(900px, calc(100vw - 32px));
+  max-height: 40vh;
+  overflow-y: auto;
+  transform: translateX(-50%);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.plan-change-text p {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+}
+
+.plan-change-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan-change-actions .plan-remove {
+  position: static;
+}
+
+/* A course the latest change affects. */
+.plan-course.affected {
+  outline: 2px solid var(--ready);
+  outline-offset: 1px;
 }
