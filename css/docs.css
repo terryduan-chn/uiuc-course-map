@@ -88,27 +88,7 @@
   scroll-margin-top: 84px; /* a contents link lands below the sticky top bar */
 }
 
-/* Text lines stay short enough to read, however wide the screen is. */
-.docs-content section > :not(.docs-demo) {
-  max-width: 80ch;
-}
-
-/* A topic with a live demo: its text on the left, the demo beside it, staying in view. */
-.docs-content section:has(.docs-demo) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-  column-gap: 28px;
-  align-items: start;
-}
-
-.docs-content .docs-demo {
-  position: sticky;
-  top: 84px;
-  grid-column: 2;
-  grid-row: 1 / span 40;
-  margin: 0;
-}
-
+/* A topic's live demo: under its text, as wide as the page. */
 .docs-demo iframe {
   display: block;
   width: 100%;
@@ -228,22 +208,6 @@
 }
 
 /* ---- Phones: one column, the contents folded into a menu at the top ---- */
-
-/* Too narrow for text and demo side by side: the demo goes under the text. */
-@media (max-width: 1180px) {
-  .docs-content section:has(.docs-demo) {
-    display: block;
-  }
-
-  .docs-content .docs-demo {
-    position: static;
-    margin-top: 14px;
-  }
-
-  .docs-demo iframe {
-    height: 70vh;
-  }
-}
 
 @media (max-width: 860px) {
   .docs-layout {
