@@ -2141,8 +2141,8 @@ body.is-home .home-map {
 
   .site-nav a {
     flex: 1 1 auto;
-    padding: 6px 4px;
-    font-size: 0.9rem;
+    padding: 6px 2px;
+    font-size: 0.78rem; /* six tabs in one row on a 375px phone */
     text-align: center;
     white-space: nowrap;
   }

@@ -15,6 +15,8 @@ nothing is typed in by hand.
 - **Find Gen Eds**: pick one or more requirements and get the courses that meet all of them, best
   average GPA first.
 - **Explore the star map**: every prerequisite link at UIUC as a 3D galaxy of 4,600 courses.
+- **Browse every major and concentration** from the official catalog, with your courses marked and
+  a + Plan button on each course. No audit needed.
 - **Mark your courses** as taken, in progress or planned.
 - **Plan your degree**: lay courses out by semester, drag them around, and see problems like a
   prerequisite in the wrong semester.
@@ -47,6 +49,7 @@ docs/        the Docs page's text, and the picture above
 Data sources:
 
 - **Courses, prerequisites, Gen Eds, terms offered:** UIUC Course Explorer.
+- **Majors and concentrations:** UIUC [Academic Catalog](https://catalog.illinois.edu/undergraduate/).
 - **Average GPA:** Wade Fagen-Ulmschneider's
   [GPA dataset](https://github.com/wadefagen/datasets/tree/main/gpa).
 

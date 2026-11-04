@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/my-courses.css" />
     <link rel="stylesheet" href="css/docs.css" />
+    <link rel="stylesheet" href="css/majors.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/sql-wasm.js"></script>
     <!-- Where the 3D view finds three.js (downloaded only when the 3D view opens). -->
     <script type="importmap">
@@ -41,6 +42,7 @@
         <div class="topbar-actions">
           <nav class="site-nav" aria-label="Pages">
             <a id="nav-courses" href="#">Courses</a>
+            <a id="nav-majors" href="#majors">Majors</a>
             <a id="nav-graph" href="#graph">Star map</a>
             <a id="nav-plan" href="#plan">My plan</a>
             <a id="nav-audit" href="#audit">Audit</a>
@@ -124,6 +126,7 @@
 
       <p id="status" class="status" role="status">Loading course data…</p>
 
+      <section id="majors-view" class="majors-view" hidden></section>
       <section id="plan-view" class="plan-view" hidden></section>
       <section id="audit-view" class="audit-view" hidden></section>
 

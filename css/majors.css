@@ -1,0 +1,177 @@
+/* The Majors page: the list by college, and one program's requirements with your courses marked.
+   Loaded after style.css and my-courses.css, whose theme colors it uses. */
+
+.majors-view {
+  animation: rise-in 0.35s var(--ease) backwards;
+}
+
+.majors-view h2 {
+  margin: 8px 0 4px;
+  font-size: 1.8rem;
+}
+
+.major-search {
+  width: min(560px, 100%);
+  height: var(--control);
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.major-meta {
+  margin: 6px 0 12px;
+  color: var(--muted);
+}
+
+.major-college,
+.major-links,
+.major-requirements {
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.major-college h3,
+.major-links h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.major-college ul,
+.major-links ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 6px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.major-college li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.major-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.major-back {
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.major-progress {
+  margin: 0 0 10px;
+}
+
+.major-requirements h3 {
+  margin: 18px 0 6px;
+  font-size: 1.1rem;
+}
+
+.major-requirements h3:first-child {
+  margin-top: 0;
+}
+
+.major-requirements > p {
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.major-table ul {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+
+.major-row {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+}
+
+.major-row.taken {
+  border-left-color: var(--taken);
+  background: color-mix(in srgb, var(--taken) 8%, transparent);
+}
+
+.major-row.planned {
+  border-left-color: var(--planned);
+  background: color-mix(in srgb, var(--planned) 8%, transparent);
+}
+
+/* Code, title, hours and actions line up down the whole table. */
+.major-option {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 60px 240px;
+  gap: 4px 12px;
+  align-items: center;
+  min-height: 32px;
+}
+
+.major-code {
+  font-weight: 700;
+}
+
+.major-hours {
+  color: var(--muted);
+  text-align: right;
+}
+
+.major-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.major-header,
+.major-comment {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+}
+
+.major-header {
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+.major-comment {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.major-total {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .major-option {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .major-title {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .major-actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: flex-start;
+  }
+}

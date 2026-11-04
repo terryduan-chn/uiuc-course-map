@@ -72,6 +72,9 @@ export function splitCourseCodes(text) {
 export function parseRoute(hash) {
   if (hash === "#plan") return { view: "plan" };
   if (hash === "#audit") return { view: "audit" };
+  // "#majors" or "#majors/engineering/computer-science-bs" (one program, by its catalog path).
+  const majors = hash.match(/^#majors(?:\/([a-z0-9_/-]+))?$/);
+  if (majors) return { view: "majors", section: majors[1] ?? null };
   // "#docs" or "#docs/my-plan" (one section); the old "#help" opens the docs too.
   const docs = hash.match(/^#(?:docs|help)(?:\/([a-z0-9-]+))?$/);
   if (docs) return { view: "docs", section: docs[1] ?? null };

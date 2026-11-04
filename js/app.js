@@ -5,6 +5,7 @@ import { createDocsView } from "./docs-view.js";
 import { startEffects, withPageTransition } from "./effects.js";
 import { subjectHue } from "./graph-data.js";
 import { createGraphView } from "./graph-view.js";
+import { createMajorsView } from "./majors-view.js";
 import { keepFocus, myCourses } from "./my-courses.js";
 import { createPicker } from "./picker.js";
 import { planButton } from "./plan-controls.js";
@@ -30,6 +31,7 @@ const searchInput = document.getElementById("search");
 const searchArea = document.getElementById("search-area");
 const navCourses = document.getElementById("nav-courses");
 const navGraph = document.getElementById("nav-graph");
+const navMajors = document.getElementById("nav-majors");
 const navPlan = document.getElementById("nav-plan");
 const navAudit = document.getElementById("nav-audit");
 const navDocs = document.getElementById("nav-docs");
@@ -58,6 +60,7 @@ let db;
 let graphView; // created once the data has loaded
 let planView;
 let auditView;
+let majorsView;
 let courseView;
 let docsView;
 let genEdPicker; // the Gen Ed menu under the search box
@@ -535,9 +538,11 @@ function render() {
   const showingPlan = !filtering && route.view === "plan";
   const showingAudit = !filtering && route.view === "audit";
   const showingDocs = !filtering && route.view === "docs";
-  const ownPage = showingPlan || showingAudit || showingDocs; // pages with no search box or course list
+  const showingMajors = !filtering && route.view === "majors";
+  const ownPage = showingPlan || showingAudit || showingDocs || showingMajors; // pages with no search box or course list
 
   navGraph.toggleAttribute("aria-current", showingGraph);
+  navMajors.toggleAttribute("aria-current", showingMajors);
   navPlan.toggleAttribute("aria-current", showingPlan);
   navAudit.toggleAttribute("aria-current", showingAudit);
   navDocs.toggleAttribute("aria-current", showingDocs);
@@ -559,6 +564,7 @@ function render() {
       [showingPlan, planView],
       [showingAudit, auditView],
       [showingDocs, docsView],
+      [showingMajors, majorsView],
     ];
     for (const [showing, view] of pages) if (!showing) view.hide();
     for (const [showing, view] of pages) if (showing) view.show(route.section);
@@ -567,6 +573,7 @@ function render() {
   planView.hide();
   auditView.hide();
   docsView.hide();
+  majorsView.hide();
   if (showingGraph) {
     subjectsSection.hidden = true;
     layout.hidden = true;
@@ -671,6 +678,7 @@ async function start() {
     onGenEd: showGenEd,
   });
   planView = createPlanView({ rows, element, getGraph: () => graphView.getGraph() });
+  majorsView = createMajorsView({ rows, element, getGraph: () => graphView.getGraph() });
   auditView = createAuditView({
     rows,
     element,
@@ -682,7 +690,7 @@ async function start() {
   });
   // Marking a course taken or planned updates whatever page is showing.
   myCourses.onChange(() => {
-    if (!["plan", "audit"].includes(parseRoute(location.hash).view)) keepFocus(render); // those pages redraw themselves
+    if (!["plan", "audit", "majors"].includes(parseRoute(location.hash).view)) keepFocus(render); // those pages redraw themselves
   });
   genEdPicker = createPicker(document.getElementById("gen-ed-filter"), {
     items: rows(
