@@ -76,3 +76,23 @@ export function filterPrograms(programs, query) {
     .map((major) => ({ ...major, concentrations: concentrationsOf(major) }))
     .filter((major) => [major, ...major.concentrations].some((program) => program.name.toLowerCase().includes(typed)));
 }
+
+/** Majors in groups ({ label, majors }), groups and majors in dictionary order. */
+function grouped(majors, labelOf) {
+  const inOrder = (a, b) => a.localeCompare(b, "en", { sensitivity: "base" });
+  const groups = new Map();
+  for (const major of [...majors].sort((a, b) => inOrder(a.name, b.name))) {
+    const label = labelOf(major);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(major);
+  }
+  return [...groups].sort(([a], [b]) => inOrder(a, b)).map(([label, members]) => ({ label, majors: members }));
+}
+
+export const byCollege = (majors) => grouped(majors, (major) => major.college);
+
+export const byLetter = (majors) =>
+  grouped(majors, (major) => {
+    const letter = major.name[0].toUpperCase();
+    return /[A-Z]/.test(letter) ? letter : "#";
+  });

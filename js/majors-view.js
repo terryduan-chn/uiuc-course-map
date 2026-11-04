@@ -6,7 +6,7 @@ import { buildAutoPlan } from "./auto-plan.js";
 import { missingRequirements } from "./graph-data.js";
 import { focusKey, keepFocus, myCourses } from "./my-courses.js";
 import { nextTerm, planButton } from "./plan-controls.js";
-import { filterPrograms, programProgress, requiredCourses, rowStatus } from "./programs.js";
+import { byCollege, byLetter, filterPrograms, programProgress, requiredCourses, rowStatus } from "./programs.js";
 import { courseFacts } from "./requirement-courses.js";
 import { splitCourseCodes } from "./search.js";
 import { termLabel, termOrder } from "./terms.js";
@@ -23,6 +23,7 @@ export function createMajorsView({ rows, element, getGraph }) {
   let titles = null; // course id -> title, looked up the first time a program opens
   let shownPath = null; // the program showing, or null for the list
   let query = "";
+  let arrangement = "college"; // the list's groups: "college" or "letter"
   let planNote = null; // what the latest Plan all did: { title, lines, undo }
 
   const programAt = (path) => programs.find((program) => program.path === path);
@@ -285,51 +286,71 @@ export function createMajorsView({ rows, element, getGraph }) {
     );
   }
 
-  /** The majors matching the search box, by college. */
+  /** One major in the list: its link, how many concentrations, and its college when grouped by letter. */
+  function majorItem(major) {
+    const concentrations = major.concentrations.length;
+    const details = [
+      arrangement === "letter" ? major.college : "",
+      concentrations > 0 ? `${concentrations} concentration${concentrations === 1 ? "" : "s"}` : "",
+    ].filter(Boolean);
+    return element(
+      "li",
+      {},
+      element("a", { href: `#majors/${major.path}`, textContent: major.name }),
+      details.length > 0 ? element("span", { className: "major-note", textContent: details.join(" · ") }) : "",
+    );
+  }
+
+  /** The majors matching the search box, in groups, each with an anchor for the jump bar. */
   function listResults() {
     const majors = filterPrograms(programs, query);
     if (majors.length === 0) {
-      return [
-        element("p", { className: "plan-empty", textContent: `No major or concentration matches “${query.trim()}”.` }),
-      ];
+      return {
+        groups: [],
+        sections: [
+          element("p", {
+            className: "plan-empty",
+            textContent: `No major or concentration matches “${query.trim()}”.`,
+          }),
+        ],
+      };
     }
-    const colleges = [...new Set(majors.map((major) => major.college))].sort();
-    return colleges.map((college) =>
+    const groups = arrangement === "letter" ? byLetter(majors) : byCollege(majors);
+    const sections = groups.map(({ label, majors: members }) =>
       element(
         "section",
         { className: "major-college" },
-        element("h3", { textContent: college }),
-        element(
-          "ul",
-          {},
-          ...majors
-            .filter((major) => major.college === college)
-            .map((major) =>
-              element(
-                "li",
-                {},
-                element("a", { href: `#majors/${major.path}`, textContent: major.name }),
-                major.concentrations.length > 0
-                  ? element("span", {
-                      className: "major-note",
-                      textContent: `${major.concentrations.length} concentration${major.concentrations.length === 1 ? "" : "s"}`,
-                    })
-                  : "",
-              ),
-            ),
-        ),
+        element("h3", { textContent: label }),
+        element("ul", {}, ...members.map(majorItem)),
       ),
+    );
+    return { groups, sections };
+  }
+
+  /** Buttons that jump to each group: letters, or colleges. (Links would change the page's address.) */
+  function jumpBar(groups, sections) {
+    return groups.map(({ label }, index) =>
+      element("button", {
+        type: "button",
+        textContent: label,
+        ariaLabel: `Jump to ${label}`,
+        onclick: () => sections[index].scrollIntoView({ block: "start" }),
+      }),
     );
   }
 
   function drawList() {
-    const results = element("div", { className: "major-results" }, ...listResults());
+    const results = element("div", { className: "major-results" });
+    const jumps = element("nav", { className: `major-jumps ${arrangement}`, ariaLabel: "Jump to a group" });
     const count = element("p", { className: "major-meta", role: "status" });
-    const showCount = () => {
-      const shown = filterPrograms(programs, query).length;
+    const showResults = () => {
+      const { groups, sections } = listResults();
+      results.replaceChildren(...sections);
+      jumps.replaceChildren(...jumpBar(groups, sections));
+      const shown = groups.reduce((sum, group) => sum + group.majors.length, 0);
       count.textContent = `${shown} major${shown === 1 ? "" : "s"}`;
     };
-    showCount();
+    showResults();
     const search = element("input", {
       type: "search",
       className: "major-search",
@@ -338,10 +359,22 @@ export function createMajorsView({ rows, element, getGraph }) {
       value: query,
       oninput: (event) => {
         query = event.target.value;
-        results.replaceChildren(...listResults());
-        showCount();
+        showResults();
       },
     });
+    const arrangeButton = (value, label) =>
+      focusKey(
+        element("button", {
+          type: "button",
+          textContent: label,
+          ariaPressed: String(arrangement === value),
+          onclick: () => {
+            arrangement = value;
+            keepFocus(drawList);
+          },
+        }),
+        `arrange-${value}`,
+      );
     view.replaceChildren(
       element("h2", { textContent: "Majors" }),
       element("p", {
@@ -349,8 +382,19 @@ export function createMajorsView({ rows, element, getGraph }) {
         textContent:
           "Every undergraduate major and concentration, from the official Academic Catalog. Open one to see its requirements with your courses marked, and plan from there.",
       }),
-      search,
+      element(
+        "div",
+        { className: "major-tools" },
+        search,
+        element(
+          "div",
+          { className: "view-toggle", role: "group", ariaLabel: "Arrange majors" },
+          arrangeButton("college", "By college"),
+          arrangeButton("letter", "A–Z"),
+        ),
+      ),
       count,
+      jumps,
       results,
     );
   }

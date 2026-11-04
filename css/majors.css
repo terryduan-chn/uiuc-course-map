@@ -21,6 +21,59 @@
   font: inherit;
 }
 
+.major-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Jump to a college or letter; stays below the top bar while the list scrolls. */
+.major-jumps {
+  position: sticky;
+  top: 66px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* The letters are one short row; fifteen colleges would cover the list, so they scroll away. */
+.major-jumps.college {
+  position: static;
+}
+
+.major-jumps:empty {
+  display: none;
+}
+
+.major-jumps button {
+  min-width: 28px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.major-jumps button:hover,
+.major-jumps button:focus-visible {
+  background: var(--accent-soft);
+}
+
+.major-college {
+  scroll-margin-top: 130px; /* clears the top bar and the jump bar */
+}
+
 .major-meta {
   margin: 6px 0 12px;
   color: var(--muted);
@@ -54,9 +107,7 @@
 
 .major-college li {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 8px;
+  flex-direction: column;
 }
 
 .major-note {
