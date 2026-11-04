@@ -1,4 +1,5 @@
 import "./demo-mode.js"; // first: in a Docs demo it swaps the storage before anything reads it
+import { setUpLanguageToggle, tr, translatePage } from "./i18n.js";
 import { createAuditView } from "./audit-view.js";
 import { createCourseView } from "./course-view.js";
 import { createDocsView } from "./docs-view.js";
@@ -23,9 +24,12 @@ import {
   MAX_RESULTS,
   parseRoute,
 } from "./search.js";
+import { termText } from "./terms.js";
 import { setUpThemeToggle } from "./theme.js";
 
 const SQL_JS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.14.2/";
+
+translatePage();
 
 const searchInput = document.getElementById("search");
 const searchArea = document.getElementById("search-area");
@@ -86,9 +90,8 @@ function termLabel(termPath) {
   return `${term[0].toUpperCase()}${term.slice(1)} ${year}`;
 }
 
-function plural(count, word) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
+const courseCount = (count) => tr(`${count} course${count === 1 ? "" : "s"}`, `${count} 门课程`);
+const subjectCount = (count) => tr(`${count} subject${count === 1 ? "" : "s"}`, `${count} 个学科`);
 
 function courseHash(subject, number) {
   return `#${subject}-${number}`;
@@ -108,15 +111,21 @@ function showGenEdResults(query) {
   const { sql, params } = buildGenEdQuery(pickedGenEds, query);
   const matches = rows(sql, params);
   const names = genEdPicker.names().join(" + ");
-  const within = query ? ` matching “${query}”` : "";
+  const within = query ? tr(` matching “${query}”`, `（匹配“${query}”）`) : "";
   if (matches.length === 0) {
-    statusLine.textContent = `No course meets ${names}${within}. Try removing a requirement.`;
+    statusLine.textContent = tr(
+      `No course meets ${names}${within}. Try removing a requirement.`,
+      `没有课程满足 ${names}${within}。试试去掉一项要求。`,
+    );
   } else {
     const shown =
       matches.length === GEN_ED_MAX_RESULTS
-        ? `The first ${GEN_ED_MAX_RESULTS} courses`
-        : plural(matches.length, "course");
-    statusLine.textContent = `${shown} meet ${names}${within}, highest average GPA first.`;
+        ? tr(`The first ${GEN_ED_MAX_RESULTS} courses`, `前 ${GEN_ED_MAX_RESULTS} 门课程`)
+        : courseCount(matches.length);
+    statusLine.textContent = tr(
+      `${shown} meet ${names}${within}, highest average GPA first.`,
+      `${shown}满足 ${names}${within}，按平均 GPA 从高到低排列。`,
+    );
   }
   resultsList.replaceChildren(...matches.map(courseListItem));
 }
@@ -153,7 +162,7 @@ function subjectCard(subject) {
     { href: `#${subject.code}`, className: "subject-card", title: subject.name },
     element("span", { className: "code", textContent: subject.code }),
     element("span", { className: "name", textContent: subject.name }),
-    element("span", { className: "count", textContent: plural(subject.course_count, "course") }),
+    element("span", { className: "count", textContent: courseCount(subject.course_count) }),
   );
   // The subject's own color, the same as its planets in the star map.
   card.style.setProperty("--hue", subjectHue(subject.code));
@@ -166,7 +175,10 @@ function drawSubjectCards() {
   const shown = filterSubjects(allSubjects, query);
   subjectGrid.replaceChildren(...shown.map(subjectCard));
   subjectFilterEmpty.hidden = shown.length > 0;
-  subjectFilterEmpty.textContent = `No subject matches “${query}”. Try a code like MATH or a word like history.`;
+  subjectFilterEmpty.textContent = tr(
+    `No subject matches “${query}”. Try a code like MATH or a word like history.`,
+    `没有匹配“${query}”的学科。试试 MATH 这样的代码，或 history 这样的词。`,
+  );
 }
 
 // ---- Home page hero ----
@@ -211,10 +223,10 @@ function showHero() {
        (SELECT COUNT(*) FROM course_grades) AS graded`,
   );
   const stats = [
-    [counts.courses, "courses"],
-    [counts.subjects, "subjects"],
-    [counts.links, "prerequisite links"],
-    [counts.graded, "with GPA data"],
+    [counts.courses, tr("courses", "门课程")],
+    [counts.subjects, tr("subjects", "个学科")],
+    [counts.links, tr("prerequisite links", "条先修关系")],
+    [counts.graded, tr("with GPA data", "门有 GPA 数据")],
   ];
   heroStats.replaceChildren(
     ...stats.map(([value, label]) => {
@@ -241,7 +253,10 @@ function showHero() {
         { className: "popular-course", href: `#${course.subject}-${course.number}`, title: course.title },
         element("span", { className: "code", textContent: `${course.subject} ${course.number}` }),
         element("span", { className: "title", textContent: course.title }),
-        element("span", { className: "count", textContent: `needed by ${course.needed_by}` }),
+        element("span", {
+          className: "count",
+          textContent: tr(`needed by ${course.needed_by}`, `${course.needed_by} 门课需要它`),
+        }),
       );
       card.style.setProperty("--hue", subjectHue(course.subject));
       return element("li", {}, card);
@@ -314,7 +329,10 @@ function showHomeCourse() {
   homeMapCourse.href = `#${course.subject}-${course.number}`;
   homeMapCourse.children[0].textContent = course.id;
   homeMapCourse.children[1].textContent = course.title;
-  homeMapCounts.textContent = `needs ${data.needs.length} · unlocks ${course.needed_by}`;
+  homeMapCounts.textContent = tr(
+    `needs ${data.needs.length} · unlocks ${course.needed_by}`,
+    `需要 ${data.needs.length} 门 · 解锁 ${course.needed_by} 门`,
+  );
   homeMapGraph.href = `#graph/${course.subject}-${course.number}`;
   homeMap?.show(data);
 }
@@ -362,8 +380,10 @@ function showSubjectGrid() {
   }
   const total = allSubjects.reduce((sum, subject) => sum + subject.course_count, 0);
   statusLine.textContent =
-    `${plural(total, "course")} in ${plural(allSubjects.length, "subject")}. ` +
-    "Filter the subjects below, or search all courses above.";
+    tr(
+      `${courseCount(total)} in ${subjectCount(allSubjects.length)}. `,
+      `${subjectCount(allSubjects.length)}，共 ${courseCount(total)}。`,
+    ) + tr("Filter the subjects below, or search all courses above.", "可以在下方筛选学科，或在上方搜索全部课程。");
   drawSubjectCards();
 }
 
@@ -409,25 +429,33 @@ function showSearchResults(query) {
   const { sql, params } = buildSearchQuery(query);
   const matches = rows(sql, params);
 
-  if (matches.length === 0) statusLine.textContent = `No course matches “${query}”.`;
+  if (matches.length === 0) statusLine.textContent = tr(`No course matches “${query}”.`, `没有匹配“${query}”的课程。`);
   else if (matches.length === MAX_RESULTS) {
-    statusLine.textContent = `Showing the first ${MAX_RESULTS} matches. Type more to narrow it down.`;
-  } else statusLine.textContent = `${plural(matches.length, "course")} found.`;
+    statusLine.textContent = tr(
+      `Showing the first ${MAX_RESULTS} matches. Type more to narrow it down.`,
+      `只显示前 ${MAX_RESULTS} 条结果，多输入几个字可以缩小范围。`,
+    );
+  } else statusLine.textContent = tr(`${courseCount(matches.length)} found.`, `找到 ${courseCount(matches.length)}。`);
 
   resultsList.replaceChildren(...matches.map(courseListItem));
 }
 
 function showSubjectCourses(code) {
   const subject = findSubject(code);
-  listHeader.replaceChildren(element("a", { href: "#", className: "back-link", textContent: "← All subjects" }));
+  listHeader.replaceChildren(
+    element("a", { href: "#", className: "back-link", textContent: tr("← All subjects", "← 全部学科") }),
+  );
 
   if (!subject) {
-    statusLine.textContent = `There is no subject “${code}” in the app's data.`;
+    statusLine.textContent = tr(`There is no subject “${code}” in the app's data.`, `数据里没有学科“${code}”。`);
     resultsList.replaceChildren();
     return;
   }
 
-  statusLine.textContent = `${subject.name} (${subject.code}): ${plural(subject.course_count, "course")}.`;
+  statusLine.textContent = tr(
+    `${subject.name} (${subject.code}): ${courseCount(subject.course_count)}.`,
+    `${subject.name}（${subject.code}）：${courseCount(subject.course_count)}。`,
+  );
   listHeader.append(element("h2", { textContent: subject.name }));
 
   const courses = rows("SELECT subject, number, title FROM courses WHERE subject = :code ORDER BY number", {
@@ -439,7 +467,13 @@ function showSubjectCourses(code) {
     const level = courseLevel(course.number);
     if (level !== levels.at(-1)) {
       levels.push(level);
-      items.push(element("li", { className: "level-heading", id: `level-${level}`, textContent: level }));
+      items.push(
+        element("li", {
+          className: "level-heading",
+          id: `level-${level}`,
+          textContent: tr(level, `${level.replace("-level", "")} 级课程`),
+        }),
+      );
     }
     items.push(courseListItem(course));
   }
@@ -461,7 +495,7 @@ function scrollToItem(item) {
   item.classList.add("jump-highlight");
 }
 
-/** "Jump to" a course number (Enter opens it) or a level (100-level, 200-level, …). */
+/** tr("Jump to", "跳到") a course number (Enter opens it) or a level (100-level, 200-level, …). */
 function jumpBar(subject, numbers, levels) {
   const input = element("input", {
     type: "search",
@@ -469,7 +503,7 @@ function jumpBar(subject, numbers, levels) {
     placeholder: "e.g. 225",
     inputMode: "numeric",
     autocomplete: "off",
-    ariaLabel: `Jump to a ${subject} course number`,
+    ariaLabel: tr(`Jump to a ${subject} course number`, `跳到 ${subject} 的课程编号`),
   });
   const message = element("span", { className: "jump-message", role: "status" });
 
@@ -479,7 +513,10 @@ function jumpBar(subject, numbers, levels) {
   };
   input.addEventListener("input", () => {
     const link = targetLink();
-    message.textContent = link || input.value.trim() === "" ? "" : `No ${subject} ${input.value.trim()}`;
+    message.textContent =
+      link || input.value.trim() === ""
+        ? ""
+        : tr(`No ${subject} ${input.value.trim()}`, `没有 ${subject} ${input.value.trim()}`);
     if (link) scrollToItem(link);
   });
   input.addEventListener("keydown", (event) => {
@@ -492,7 +529,7 @@ function jumpBar(subject, numbers, levels) {
       type: "button",
       className: "level-button",
       textContent: level.replace("-level", ""),
-      title: `Jump to ${level} courses`,
+      title: tr(`Jump to ${level} courses`, `跳到 ${level.replace("-level", "")} 级课程`),
       onclick: () => scrollToItem(document.getElementById(`level-${level}`)),
     }),
   );
@@ -500,7 +537,7 @@ function jumpBar(subject, numbers, levels) {
   return element(
     "div",
     { className: "jump-bar" },
-    element("span", { className: "jump-label", textContent: "Jump to" }),
+    element("span", { className: "jump-label", textContent: tr("Jump to", "跳到") }),
     input,
     ...levelButtons,
     message,
@@ -629,12 +666,15 @@ function readMeta() {
   const meta = Object.fromEntries(rows("SELECT key, value FROM meta").map((r) => [r.key, r.value]));
   currentCatalogTerm = termLabel(meta.catalog_term);
   oldestTermSearched = termLabel(meta.oldest_term_searched);
-  // The page is in English, so the date is too, whatever language the computer uses.
-  const imported = new Date(meta.imported_at).toLocaleDateString("en-US", { dateStyle: "medium" });
-  sourceNote.textContent =
+  // The date follows the page's language, not the computer's.
+  const imported = new Date(meta.imported_at).toLocaleDateString(tr("en-US", "zh-CN"), { dateStyle: "medium" });
+  sourceNote.textContent = tr(
     `Data from UIUC Course Explorer, imported ${imported}: course details from the ` +
-    `${termLabel(meta.oldest_catalog_searched)} to ${currentCatalogTerm} catalogs, terms offered ` +
-    `since ${oldestTermSearched}.`;
+      `${termLabel(meta.oldest_catalog_searched)} to ${currentCatalogTerm} catalogs, terms offered ` +
+      `since ${oldestTermSearched}.`,
+    `数据来自 UIUC Course Explorer，导入于 ${imported}：课程信息取自${termText(termLabel(meta.oldest_catalog_searched))}到` +
+      `${termText(currentCatalogTerm)}的目录，开课学期从${termText(oldestTermSearched)}算起。`,
+  );
   return {
     imported_at: imported,
     grades_from: meta.grades_from,
@@ -653,11 +693,16 @@ async function loadDatabase() {
 }
 
 async function start() {
+  setUpLanguageToggle(document.getElementById("language-toggle"));
+  setUpLanguageToggle(document.getElementById("language-toggle"));
   setUpThemeToggle(document.getElementById("theme-toggle"));
   try {
     db = await loadDatabase();
   } catch (error) {
-    statusLine.textContent = "Couldn't load the course data. Check your internet connection and reload the page.";
+    statusLine.textContent = tr(
+      "Couldn't load the course data. Check your internet connection and reload the page.",
+      "课程数据加载失败，请检查网络后刷新页面。",
+    );
     statusLine.classList.add("error");
     console.error(error);
     return;
@@ -705,7 +750,7 @@ async function start() {
       count: genEd.count,
       hue: GEN_ED_CATEGORIES[genEd.category]?.hue ?? 250,
     })),
-    noun: "Gen Eds",
+    noun: tr("Gen Eds", "通识要求"),
     onChange: (codes) => {
       pickedGenEds = codes;
       render();

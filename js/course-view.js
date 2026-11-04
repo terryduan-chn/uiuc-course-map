@@ -1,6 +1,7 @@
 // The course page: its official details, prerequisites, GPA and sources, and the panel for
 // marking it taken, in progress or planned.
 
+import { tr } from "./i18n.js";
 import { missingRequirements } from "./graph-data.js";
 import { focusKey, myCourses } from "./my-courses.js";
 import { issueBadges, nextTerm, planControls, planCourses } from "./plan-controls.js";
@@ -12,6 +13,7 @@ import {
   slotKindsOf,
   slotNames,
   slotsFilledBy,
+  reasonText,
 } from "./plan-insights.js";
 import { courseFacts } from "./requirement-courses.js";
 import {
@@ -21,7 +23,7 @@ import {
   requirementLabel,
   splitCourseCodes,
 } from "./search.js";
-import { currentTerm, offeredLabel, planSemesters, termLabel as semesterLabel } from "./terms.js";
+import { currentTerm, offeredLabel, planSemesters, termLabel as semesterLabel, termText } from "./terms.js";
 
 /**
  * @param {object} options
@@ -53,7 +55,7 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     if (!courseExists(subject, number)) {
       return element("span", {
         className: "chip missing",
-        title: "Not in any Course Explorer catalog since 2015",
+        title: tr("Not in any Course Explorer catalog since 2015", "2015 年以来不在任何 Course Explorer 目录中"),
         textContent: label,
       });
     }
@@ -62,7 +64,9 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       className: status ? `chip ${status}` : "chip",
       href: courseHash(subject, number),
       textContent: label,
-      title: status ? `You've marked ${label} ${status}` : "",
+      title: status
+        ? tr(`You've marked ${label} ${status}`, `你已将 ${label} 标记为${status === "taken" ? "已修" : "已计划"}`)
+        : "",
     });
   }
 
@@ -76,10 +80,14 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     const courses = planCourses();
     const runs = fact
       ? fact.offered
-        ? `Runs ${seasonsText(fact.seasons)}`
-        : `Not offered since ${oldestTermSearched}`
+        ? tr(`Runs ${seasonsText(fact.seasons)}`, `开课：${seasonsText(fact.seasons)}`)
+        : tr(`Not offered since ${oldestTermSearched}`, `${termText(oldestTermSearched)}以来未开课`)
       : "";
-    const plan = element("a", { href: "#plan", className: "my-course-plan", textContent: "View my plan →" });
+    const plan = element("a", {
+      href: "#plan",
+      className: "my-course-plan",
+      textContent: tr("View my plan →", "查看我的计划 →"),
+    });
 
     // Whether your taken courses meet the prerequisites today.
     const taken = new Set(myCourses.ids("taken"));
@@ -88,7 +96,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     if (hasPrerequisites && taken.size === 0) {
       check = element("p", {
         className: "prereq-check",
-        textContent: "Mark the courses you've taken to check whether you meet the prerequisites.",
+        textContent: tr(
+          "Mark the courses you've taken to check whether you meet the prerequisites.",
+          "标记你修过的课，就能检查是否满足先修要求。",
+        ),
       });
     } else if (hasPrerequisites && !status) {
       const missing = missingRequirements(graph, id, taken);
@@ -96,16 +107,24 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       const planned = missing
         .flatMap((group) => group.ids)
         .filter((prerequisite) => myCourses.status(prerequisite) === "planned")
-        .map(
-          (prerequisite) =>
+        .map((prerequisite) =>
+          tr(
             `${prerequisite} is planned for ${myCourses.term(prerequisite) ? semesterLabel(myCourses.term(prerequisite)) : "a semester not picked yet"}`,
+            `${prerequisite} 计划在${myCourses.term(prerequisite) ? semesterLabel(myCourses.term(prerequisite)) : "尚未选定的学期"}修读`,
+          ),
         );
       check =
         missing.length === 0
-          ? element("p", { className: "prereq-check met", textContent: "✓ Your taken courses meet the prerequisites." })
+          ? element("p", {
+              className: "prereq-check met",
+              textContent: tr("✓ Your taken courses meet the prerequisites.", "✓ 你修过的课已满足先修要求。"),
+            })
           : element("p", {
               className: "prereq-check unmet",
-              textContent: `Not yet: still needs ${describeMissing(missing)}.${planned.length ? ` ${planned.join("; ")}.` : ""}`,
+              textContent: tr(
+                `Not yet: still needs ${describeMissing(missing)}.${planned.length ? ` ${planned.join("; ")}.` : ""}`,
+                `还不满足：仍需要 ${describeMissing(missing)}。${planned.length ? `${planned.join("；")}。` : ""}`,
+              ),
             });
     }
 
@@ -114,7 +133,7 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       const best = bestTerm({ id, courses, graph, facts, startTerm: nextTerm() });
       const term = element(
         "select",
-        { className: "term-menu", ariaLabel: `Semester to plan ${id} in` },
+        { className: "term-menu", ariaLabel: tr(`Semester to plan ${id} in`, `计划修读 ${id} 的学期`) },
         ...termChoicesAhead().map((value) =>
           element("option", { value, textContent: semesterLabel(value), selected: value === best }),
         ),
@@ -122,7 +141,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       const why =
         best === nextTerm()
           ? ""
-          : ` · Best semester: ${semesterLabel(best)}, after its prerequisites${fact?.seasons.size === 1 ? " and in its season" : ""}`;
+          : tr(
+              ` · Best semester: ${semesterLabel(best)}, after its prerequisites${fact?.seasons.size === 1 ? " and in its season" : ""}`,
+              ` · 最合适的学期：${semesterLabel(best)}，排在先修课之后${fact?.seasons.size === 1 ? "，也正好是开课季节" : ""}`,
+            );
       // A Gen Ed course can fill open Gen Ed slots in the plan (one of each kind it counts for).
       const [slot, ...alsoFills] = slotsFilledBy(fact, myCourses.slots());
       const courseKinds = slotKindsOf(fact);
@@ -136,8 +158,14 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
             element("button", {
               type: "button",
               className: "btn btn-ghost my-course-slot",
-              textContent: `Use for my ${slotNames(meets)} slot${alsoFills.length ? "s" : ""}${slot.term ? ` · ${semesterLabel(slot.term)}` : ""}`,
-              title: "Puts it in the plan where the slot is, and the slot goes away",
+              textContent: tr(
+                `Use for my ${slotNames(meets)} slot${alsoFills.length ? "s" : ""}${slot.term ? ` · ${semesterLabel(slot.term)}` : ""}`,
+                `用来填我的${slotNames(meets)}空位${slot.term ? ` · ${semesterLabel(slot.term)}` : ""}`,
+              ),
+              title: tr(
+                "Puts it in the plan where the slot is, and the slot goes away",
+                "把这门课放到空位所在的学期，空位随之消失",
+              ),
               onclick: () =>
                 myCourses.fillSlot(
                   slot.id,
@@ -159,18 +187,18 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
             element("button", {
               type: "button",
               className: "btn btn-primary",
-              textContent: "+ Add to plan",
+              textContent: tr("+ Add to plan", "+ 加入计划"),
               onclick: () => myCourses.set(id, "planned", term.value),
             }),
             `mark-planned-${id}`, // after adding, the Planned button takes the focus
           ),
-          element("span", { className: "my-course-label", textContent: "for" }),
+          element("span", { className: "my-course-label", textContent: tr("for", "学期") }),
           term,
           focusKey(
             element("button", {
               type: "button",
               className: "btn btn-ghost",
-              textContent: "I've taken it",
+              textContent: tr("I've taken it", "我修过了"),
               onclick: () => myCourses.set(id, "taken"),
             }),
             `mark-taken-${id}`,
@@ -179,8 +207,11 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
             element("button", {
               type: "button",
               className: "btn btn-ghost",
-              textContent: "I'm taking it now",
-              title: `Mark ${id} in progress for ${semesterLabel(currentTerm())}`,
+              textContent: tr("I'm taking it now", "我正在修"),
+              title: tr(
+                `Mark ${id} in progress for ${semesterLabel(currentTerm())}`,
+                `把 ${id} 标记为 ${semesterLabel(currentTerm())}在修`,
+              ),
               onclick: () => myCourses.setInProgress(id),
             }),
             `mark-taken-${id}`, // the Taken button takes the focus after
@@ -207,10 +238,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     const group = element(
       "div",
       { className: "view-toggle my-course-toggle", role: "group" },
-      toggle("taken", "Taken"),
-      toggle("planned", "Planned"),
+      toggle("taken", tr("Taken", "已修")),
+      toggle("planned", tr("Planned", "已计划")),
     );
-    group.setAttribute("aria-label", `Mark ${id}`);
+    group.setAttribute("aria-label", tr(`Mark ${id}`, `标记 ${id}`));
     const term = myCourses.term(id);
     const issues =
       status === "planned" ? courseIssues({ id, term, courses, graph, facts, offeredSince: oldestTermSearched }) : [];
@@ -218,7 +249,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       status === "planned" && issues.length === 0 && term
         ? element("p", {
             className: "prereq-check met",
-            textContent: `✓ Fits ${semesterLabel(term)}: prerequisites come first${fact?.offered ? ", and it runs that season" : ""}.`,
+            textContent: tr(
+              `✓ Fits ${semesterLabel(term)}: prerequisites come first${fact?.offered ? ", and it runs that season" : ""}.`,
+              `✓ 适合 ${semesterLabel(term)}：先修课都排在前面${fact?.offered ? "，这个季节也开课" : ""}。`,
+            ),
           })
         : "";
     return element(
@@ -239,12 +273,21 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
         ? element(
             "p",
             { className: "my-course-hint" },
-            myCourses.isAuto(id) ? element("span", { className: "plan-auto", textContent: "auto" }) : "",
+            myCourses.isAuto(id) ? element("span", { className: "plan-auto", textContent: tr("auto", "自动") }) : "",
             myCourses.isAuto(id)
-              ? ` Added by Auto-plan for ${myCourses.reason(id)} · ⋯ to move, swap or remove it`
+              ? tr(
+                  ` Added by Auto-plan for ${myCourses.reason(id)} · ⋯ to move, swap or remove it`,
+                  ` 由自动规划加入，用于${reasonText(myCourses.reason(id))} · 点 ⋯ 可移动、替换或移除`,
+                )
               : myCourses.fills(id).length > 0
-                ? `Fills your ${slotNames(myCourses.fills(id))} Gen Ed${myCourses.fills(id).length > 1 ? "s" : ""} · ⋯ to move, swap or remove it`
-                : `Planned for ${myCourses.reason(id)} · ⋯ to move, swap or remove it`,
+                ? tr(
+                    `Fills your ${slotNames(myCourses.fills(id))} Gen Ed${myCourses.fills(id).length > 1 ? "s" : ""} · ⋯ to move, swap or remove it`,
+                    `填补你的${slotNames(myCourses.fills(id))}通识要求 · 点 ⋯ 可移动、替换或移除`,
+                  )
+                : tr(
+                    `Planned for ${myCourses.reason(id)} · ⋯ to move, swap or remove it`,
+                    `计划用于${reasonText(myCourses.reason(id))} · 点 ⋯ 可移动、替换或移除`,
+                  ),
           )
         : "",
       issueBadges(element, issues),
@@ -254,12 +297,15 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     );
   }
 
-  /** "Planned for Spring 2027", "In progress, Fall 2026", "Credit before UIUC", "Taken Fall 2025". */
+  /** "Planned for Spring 2027", "In progress, Fall 2026", tr("Credit before UIUC", "入学前已获学分"), "Taken Fall 2025". */
   function termNote(id, status, term) {
-    if (status === "taken" && myCourses.kind(id) === "credit") return "Credit before UIUC";
-    if (!term) return "No semester yet";
-    if (status === "planned") return `Planned for ${semesterLabel(term)}`;
-    return `${myCourses.kind(id) === "registered" ? "In progress," : "Taken"} ${semesterLabel(term)}`;
+    if (status === "taken" && myCourses.kind(id) === "credit") return tr("Credit before UIUC", "入学前已获学分");
+    if (!term) return tr("No semester yet", "尚未选学期");
+    if (status === "planned") return tr(`Planned for ${semesterLabel(term)}`, `计划在 ${semesterLabel(term)}`);
+    return tr(
+      `${myCourses.kind(id) === "registered" ? "In progress," : "Taken"} ${semesterLabel(term)}`,
+      `${semesterLabel(term)} ${myCourses.kind(id) === "registered" ? "在修" : "已修"}`,
+    );
   }
 
   /** Fall and Spring semesters from next semester on, four years ahead. */
@@ -284,9 +330,9 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
    */
   function prerequisitesSection(course) {
     const section = element("section", { className: "detail-section" });
-    section.append(element("h3", { textContent: "Prerequisites" }));
+    section.append(element("h3", { textContent: tr("Prerequisites", "先修课") }));
     if (course.prerequisite_text === "") {
-      section.append(element("p", { textContent: "None listed." }));
+      section.append(element("p", { textContent: tr("None listed.", "未列出。") }));
       return section;
     }
 
@@ -304,7 +350,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     if (groups.size > 0) {
       if (groups.size > 1) {
         section.append(
-          element("p", { className: "requirements-intro", textContent: `Meet all ${groups.size} requirements:` }),
+          element("p", {
+            className: "requirements-intro",
+            textContent: tr(`Meet all ${groups.size} requirements:`, `需要全部满足这 ${groups.size} 项要求：`),
+          }),
         );
       }
       const list = element("ol", { className: "requirements" });
@@ -320,12 +369,17 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
         );
         for (const row of group) item.append(courseChip(row.prereq_subject, row.prereq_number));
         if (group[0].concurrent_ok) {
-          item.append(element("span", { className: "concurrent", textContent: "can be taken at the same time" }));
+          item.append(
+            element("span", {
+              className: "concurrent",
+              textContent: tr("can be taken at the same time", "可以同时修"),
+            }),
+          );
         }
         list.append(item);
       }
       section.append(list);
-      section.append(element("p", { className: "small-label", textContent: "Official wording" }));
+      section.append(element("p", { className: "small-label", textContent: tr("Official wording", "官方原文") }));
     }
     section.append(officialWording(course.prerequisite_text));
     return section;
@@ -341,7 +395,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       element("button", {
         type: "button",
         className: "tag gen-ed-link",
-        title: `Gen Ed: ${genEd.category}. Show every course that meets it.`,
+        title: tr(
+          `Gen Ed: ${genEd.category}. Show every course that meets it.`,
+          `通识要求：${genEd.category}。点击查看所有满足它的课程。`,
+        ),
         textContent: genEd.name,
         onclick: () => onGenEd(genEd.code),
       }),
@@ -359,21 +416,23 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
 
   /** Average GPA, 4.0 rate and the newest term offered, side by side. */
   function statTiles(grades, terms) {
-    const lastOffered = terms[0] ?? `Not since ${oldestTermSearched}`;
-    const offered = terms[0] ? offeredLabel(terms[0]) : "last offered"; // Spring 2027 is "offered next" while Fall 2026 is on
+    const lastOffered = terms[0]
+      ? termText(terms[0])
+      : tr(`Not since ${oldestTermSearched}`, `${termText(oldestTermSearched)}以来未开课`);
+    const offered = terms[0] ? offeredLabel(terms[0]) : tr("last offered", "最近开课"); // Spring 2027 is "offered next" while Fall 2026 is on
     if (!grades) {
       return element(
         "div",
         { className: "stats" },
-        statTile("—", "average GPA (no grade data)"),
+        statTile("—", tr("average GPA (no grade data)", "平均 GPA（暂无成绩数据）")),
         statTile(lastOffered, offered),
       );
     }
     return element(
       "div",
       { className: "stats" },
-      statTile(grades.average_gpa.toFixed(2), "average GPA"),
-      statTile(`${(grades.four_point_rate * 100).toFixed(2)}%`, "got a 4.0 (A or A+)"),
+      statTile(grades.average_gpa.toFixed(2), tr("average GPA", "平均 GPA")),
+      statTile(`${(grades.four_point_rate * 100).toFixed(2)}%`, tr("got a 4.0 (A or A+)", "拿到 4.0（A 或 A+）")),
       statTile(lastOffered, offered),
     );
   }
@@ -385,14 +444,14 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
   /** Corequisites, restrictions, schedule notes and fees, or nothing if the course has none. */
   function registrationSection(course) {
     const notes = [
-      ["Corequisite", course.corequisite_text],
-      ["Who can register", course.restrictions],
-      ["Schedule", course.schedule_info],
-      ["Fee", course.fee],
+      [tr("Corequisite", "同修要求"), course.corequisite_text],
+      [tr("Who can register", "选课限制"), course.restrictions],
+      [tr("Schedule", "上课安排"), course.schedule_info],
+      [tr("Fee", "费用"), course.fee],
     ].filter(([, text]) => text !== "");
     if (notes.length === 0) return "";
     return sideSection(
-      "Registration",
+      tr("Registration", "选课信息"),
       element(
         "dl",
         { className: "notes" },
@@ -405,8 +464,11 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
   }
 
   function offeredSection(terms) {
-    const text = terms.length === 0 ? `Not offered since ${oldestTermSearched} or earlier.` : terms.join(", ");
-    return sideSection("Offered", element("p", { textContent: text }));
+    const text =
+      terms.length === 0
+        ? tr(`Not offered since ${oldestTermSearched} or earlier.`, `${termText(oldestTermSearched)}或更早以来未开课。`)
+        : terms.map(termText).join(tr(", ", "、"));
+    return sideSection(tr("Offered", "开课学期"), element("p", { textContent: text }));
   }
 
   function sourcesSection(course, grades) {
@@ -418,34 +480,45 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
           href: courseExplorerPage(course.source_url),
           target: "_blank",
           rel: "noopener",
-          textContent: `Course Explorer (${course.catalog_term} catalog) ↗`,
+          textContent: tr(
+            `Course Explorer (${course.catalog_term} catalog) ↗`,
+            `Course Explorer（${termText(course.catalog_term)}目录）↗`,
+          ),
         }),
       ),
     ];
     if (grades) {
       const span =
-        grades.first_term === grades.last_term ? grades.first_term : `${grades.first_term} – ${grades.last_term}`;
+        grades.first_term === grades.last_term
+          ? termText(grades.first_term)
+          : `${termText(grades.first_term)} – ${termText(grades.last_term)}`;
       items.push(
         element(
           "li",
           {},
-          `Grades: ${grades.students.toLocaleString("en-US")} students, ${span}, from `,
+          tr(
+            `Grades: ${grades.students.toLocaleString("en-US")} students, ${span}, from `,
+            `成绩：${grades.students.toLocaleString("en-US")} 名学生，${span}，来自 `,
+          ),
           element("a", {
             href: GPA_DATASET_PAGE,
             target: "_blank",
             rel: "noopener",
-            textContent: "Wade Fagen-Ulmschneider's GPA dataset ↗",
+            textContent: tr("Wade Fagen-Ulmschneider's GPA dataset ↗", "Wade Fagen-Ulmschneider 的 GPA 数据集 ↗"),
           }),
         ),
       );
     } else {
       items.push(
         element("li", {
-          textContent: "No grade data: grades are only released for classes of more than 20 students.",
+          textContent: tr(
+            "No grade data: grades are only released for classes of more than 20 students.",
+            "暂无成绩数据：只有超过 20 名学生的班级才会公布成绩。",
+          ),
         }),
       );
     }
-    return sideSection("Sources", element("ul", { className: "sources" }, ...items));
+    return sideSection(tr("Sources", "数据来源"), element("ul", { className: "sources" }, ...items));
   }
 
   function showCourse(subject, number) {
@@ -459,7 +532,7 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
     if (!course) {
       panel.replaceChildren(
         element("h2", { textContent: `${subject} ${number}` }),
-        element("p", { textContent: "This course isn't in the app's data." }),
+        element("p", { textContent: tr("This course isn't in the app's data.", "数据里没有这门课。") }),
       );
       return;
     }
@@ -478,9 +551,10 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
         ? ""
         : element("p", {
             className: "notice",
-            textContent:
-              `Not in the ${currentCatalogTerm} catalog. This information is from the ` +
-              `${course.catalog_term} catalog, so the course may have changed or been retired.`,
+            textContent: tr(
+              `Not in the ${currentCatalogTerm} catalog. This information is from the ${course.catalog_term} catalog, so the course may have changed or been retired.`,
+              `不在${termText(currentCatalogTerm)}目录中。这些信息来自${termText(course.catalog_term)}目录，课程可能已有变动或已停开。`,
+            ),
           });
 
     const header = element(
@@ -506,9 +580,12 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
               "a",
               { href: `#graph/${subject}-${number}`, className: "btn btn-primary star-link" },
               element("span", { className: "star-link-icon", ariaHidden: "true" }),
-              "Open in star map",
+              tr("Open in star map", "在星图中打开"),
             )
-          : element("span", { className: "star-link-none", textContent: "Not on the star map: no prerequisite links" }),
+          : element("span", {
+              className: "star-link-none",
+              textContent: tr("Not on the star map: no prerequisite links", "不在星图上：没有先修关系"),
+            }),
       ),
       element(
         "div",
@@ -527,8 +604,8 @@ export function createCourseView({ rows, element, panel, getGraph, currentCatalo
       element(
         "section",
         { className: "detail-section" },
-        element("h3", { textContent: "Description" }),
-        element("p", { textContent: description || "No description." }),
+        element("h3", { textContent: tr("Description", "课程介绍") }),
+        element("p", { textContent: description || tr("No description.", "暂无介绍。") }),
       ),
     );
     const side = element(

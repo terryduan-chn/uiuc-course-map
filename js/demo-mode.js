@@ -86,6 +86,10 @@ export function memoryStorage(items) {
 }
 
 if (typeof location !== "undefined" && new URLSearchParams(location.search).has("demo")) {
-  Object.defineProperty(window, "localStorage", { value: memoryStorage(sampleData()) });
+  // The demo speaks the page's language, so that choice comes along before the swap.
+  const language = localStorage.getItem("language");
+  Object.defineProperty(window, "localStorage", {
+    value: memoryStorage({ ...sampleData(), ...(language ? { language } : {}) }),
+  });
   document.documentElement.classList.add("demo");
 }

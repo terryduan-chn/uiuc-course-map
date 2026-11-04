@@ -1,7 +1,10 @@
 // Semesters as the degree audit writes them: "FA26" (Fall 2026), "SP27", "SU27", "WI26".
 // No DOM code here, so the tests can use it.
 
+import { tr } from "./i18n.js";
+
 const SEASONS = { WI: "Winter", SP: "Spring", SU: "Summer", FA: "Fall" };
+const SEASONS_ZH = { WI: "冬季", SP: "春季", SU: "夏季", FA: "秋季" };
 const SEASON_ORDER = { WI: 0, SP: 1, SU: 2, FA: 3 }; // Winter session comes before Spring of the same year
 const TERM = /^(WI|SP|SU|FA)(\d\d)$/;
 
@@ -16,7 +19,14 @@ export function termOrder(term) {
 /** "FA26" -> "Fall 2026". */
 export function termLabel(term) {
   const match = String(term ?? "").match(TERM);
-  return match ? `${SEASONS[match[1]]} 20${match[2]}` : "";
+  if (!match) return "";
+  return tr(`${SEASONS[match[1]]} 20${match[2]}`, `20${match[2]} 年${SEASONS_ZH[match[1]]}`);
+}
+
+/** "FA26" -> "Fall". */
+export function seasonName(term) {
+  const season = String(term ?? "").slice(0, 2);
+  return tr(SEASONS[season], SEASONS_ZH[season]);
 }
 
 /** The term a date falls in: Jan–May Spring, Jun–Jul Summer, Aug–Dec Fall. */
@@ -109,10 +119,17 @@ export function termFromLabel(label) {
   return `${season}${match[2]}`;
 }
 
+/** A term as the database writes it ("Fall 2026"), in the page's language. Other text comes back as it is. */
+export function termText(label) {
+  const term = termFromLabel(label);
+  return term ? termLabel(term) : label;
+}
+
 /** How a course's newest offered term reads now: "offered next", "offered now" or "last offered". */
 export function offeredLabel(label, today = currentTerm()) {
   const term = termFromLabel(label);
-  if (!term) return "last offered";
+  if (!term) return tr("last offered", "最近开课");
   const difference = termOrder(term) - termOrder(today);
-  return difference > 0 ? "offered next" : difference === 0 ? "offered now" : "last offered";
+  if (difference > 0) return tr("offered next", "下次开课");
+  return difference === 0 ? tr("offered now", "本学期开课") : tr("last offered", "最近开课");
 }

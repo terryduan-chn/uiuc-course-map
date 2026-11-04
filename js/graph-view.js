@@ -1,5 +1,6 @@
 // The #graph page: every prerequisite link at UIUC, as a 3D "galaxy" or a simpler
 // 2D view of one course's neighborhood in horizontal columns.
+import { tr } from "./i18n.js";
 import { buildGraph, courseId, matchCourses, mostNeeded, neighborhood, readyNext, subjectHue } from "./graph-data.js";
 import { keepFocus, myCourses } from "./my-courses.js";
 import { planButton } from "./plan-controls.js";
@@ -70,7 +71,7 @@ export function createGraphView({ rows, element }) {
           count: countBySubject.get(subject.code),
           hue: subjectHue(subject.code),
         })),
-      noun: "subjects",
+      noun: tr("subjects", "学科"),
       onChange: (codes) => {
         pickedSubjects = codes;
         onFilterChange();
@@ -100,23 +101,32 @@ export function createGraphView({ rows, element }) {
 
   function filterStatus() {
     if (mineOnly && myCourses.ids().length === 0) {
-      return "You haven't marked any courses yet. Press Taken or Planned on a course page, or add them on My plan.";
+      return tr(
+        "You haven't marked any courses yet. Press Taken or Planned on a course page, or add them on My plan.",
+        "你还没有标记任何课程。可以在课程页点“已修”或“已计划”，也可以在“我的计划”里添加。",
+      );
     }
     const what =
       [searchInput.value.trim() && `“${searchInput.value.trim()}”`, pickedSubjects.join(", ")]
         .filter(Boolean)
-        .join(" in ") || "your courses";
+        .join(tr(" in ", " · ")) || tr("your courses", "你的课程");
     if (mineOnly) {
       const marks = courseMarks();
       const count = (kind) => [...filtered].filter((id) => marks.get(id) === kind).length;
-      const within = searchInput.value.trim() || pickedSubjects.length > 0 ? ` matching ${what}` : "";
-      return (
+      const within =
+        searchInput.value.trim() || pickedSubjects.length > 0 ? tr(` matching ${what}`, `（匹配 ${what}）`) : "";
+      return tr(
         `Your courses${within}: ${count("taken")} taken (green), ${count("planned")} planned (blue), ` +
-        `${count("ready")} ready to take next (amber).`
+          `${count("ready")} ready to take next (amber).`,
+        `你的课程${within}：${count("taken")} 门已修（绿色），${count("planned")} 门已计划（蓝色），` +
+          `${count("ready")} 门接下来可以修（琥珀色）。`,
       );
     }
-    if (filtered.size === 0) return `No course in the graph matches ${what}.`;
-    return `${filtered.size.toLocaleString("en-US")} course${filtered.size === 1 ? "" : "s"} match ${what}. Click one to see its links.`;
+    if (filtered.size === 0) return tr(`No course in the graph matches ${what}.`, `图中没有匹配 ${what} 的课程。`);
+    return tr(
+      `${filtered.size.toLocaleString("en-US")} course${filtered.size === 1 ? "" : "s"} match ${what}. Click one to see its links.`,
+      `${filtered.size.toLocaleString("en-US")} 门课程匹配 ${what}。点击一门查看它的关系。`,
+    );
   }
 
   const graphHash = (id) => `#graph/${id.replace(" ", "-")}`;
@@ -139,7 +149,10 @@ export function createGraphView({ rows, element }) {
       element("span", { className: "title", textContent: node.title }),
       element("span", {
         className: "count",
-        textContent: node.dependents.length === 0 ? "needed by none" : `needed by ${node.dependents.length}`,
+        textContent:
+          node.dependents.length === 0
+            ? tr("needed by none", "没有课程需要它")
+            : tr(`needed by ${node.dependents.length}`, `${node.dependents.length} 门课需要它`),
       }),
     );
   }
@@ -158,14 +171,21 @@ export function createGraphView({ rows, element }) {
       "div",
       { className: "graph-chips" },
       ...shown.map((id) => element("a", { className: "chip", href: graphHash(id), textContent: id })),
-      ids.length > shown.length ? element("span", { textContent: `+${ids.length - shown.length} more` }) : "",
+      ids.length > shown.length
+        ? element("span", {
+            textContent: tr(`+${ids.length - shown.length} more`, `还有 ${ids.length - shown.length} 门`),
+          })
+        : "",
     );
   }
 
-  /** "Needs": one row per requirement group, each with its "Choose 1 of 3" badge. */
+  /** tr("Needs", "需要"): one row per requirement group, each with its "Choose 1 of 3" badge. */
   function needsGroup(node) {
     if (node.requirements.length === 0) return "";
-    const intro = node.requirements.length > 1 ? `Needs (all ${node.requirements.length} requirements)` : "Needs";
+    const intro =
+      node.requirements.length > 1
+        ? tr(`Needs (all ${node.requirements.length} requirements)`, `需要（全部 ${node.requirements.length} 项要求）`)
+        : tr("Needs", "需要");
     return element(
       "div",
       { className: "graph-card-group" },
@@ -186,16 +206,23 @@ export function createGraphView({ rows, element }) {
         : element(
             "div",
             { className: "graph-card-group" },
-            element("span", { className: "small-label", textContent: `Needed by (${node.dependents.length})` }),
+            element("span", {
+              className: "small-label",
+              textContent: tr(`Needed by (${node.dependents.length})`, `被这些课需要（${node.dependents.length}）`),
+            }),
             chips(byImportance(node.dependents)),
           ),
       element(
         "div",
         { className: "graph-card-actions" },
         planButton(element, node.id),
-        element("a", { href: `#${node.id.replace(" ", "-")}`, textContent: "Open course page" }),
-        element("button", { type: "button", textContent: "See in 2D", onclick: () => setMode("2d") }),
-        element("button", { type: "button", textContent: "Back to map", onclick: backToMap }),
+        element("a", { href: `#${node.id.replace(" ", "-")}`, textContent: tr("Open course page", "打开课程页") }),
+        element("button", {
+          type: "button",
+          textContent: tr("See in 2D", "在 2D 中查看"),
+          onclick: () => setMode("2d"),
+        }),
+        element("button", { type: "button", textContent: tr("Back to map", "返回星图"), onclick: backToMap }),
       ),
     );
   }
@@ -211,11 +238,17 @@ export function createGraphView({ rows, element }) {
 
   async function draw3d({ keepCamera = false } = {}) {
     if (positions.size === 0) {
-      show3dFailure("The 3D layout is missing from the data; run npm run import. Showing 2D.", null);
+      show3dFailure(
+        tr(
+          "The 3D layout is missing from the data; run npm run import. Showing 2D.",
+          "数据里缺少 3D 布局（请运行 npm run import），现在显示 2D。",
+        ),
+        null,
+      );
       return;
     }
     if (!galaxy) {
-      status.textContent = "Loading the 3D view…";
+      status.textContent = tr("Loading the 3D view…", "正在加载 3D 视图…");
       galaxy = import("./galaxy.js").then(({ createGalaxy }) =>
         createGalaxy(container3d, graph, positions, {
           onSelect: (id) => {
@@ -228,18 +261,31 @@ export function createGraphView({ rows, element }) {
     try {
       view = await galaxy;
     } catch (error) {
-      show3dFailure("Couldn't start the 3D view (no internet or no 3D support). Showing 2D instead.", error);
+      show3dFailure(
+        tr(
+          "Couldn't start the 3D view (no internet or no 3D support). Showing 2D instead.",
+          "3D 视图无法启动（没有网络或设备不支持 3D），现在显示 2D。",
+        ),
+        error,
+      );
       return;
     }
     if (mode !== "3d" || !visible) return;
     view.start();
     view.show({ focusedId, highlighted, filtered, marks: courseMarks(), keepCamera });
-    if (focusedId) status.textContent = `${focusedId} and its links. Click another planet, or “Back to map”.`;
+    if (focusedId)
+      status.textContent = tr(
+        `${focusedId} and its links. Click another planet, or “Back to map”.`,
+        `${focusedId} 及其关系。可以点击另一颗行星，或点“返回星图”。`,
+      );
     else if (filtered) status.textContent = filterStatus();
     else
       status.textContent =
         notice ||
-        `${graph.nodes.length.toLocaleString("en-US")} courses, ${graph.links.length.toLocaleString("en-US")} prerequisite links. Drag to turn, scroll to zoom, click a planet.`;
+        tr(
+          `${graph.nodes.length.toLocaleString("en-US")} courses, ${graph.links.length.toLocaleString("en-US")} prerequisite links. Drag to turn, scroll to zoom, click a planet.`,
+          `${graph.nodes.length.toLocaleString("en-US")} 门课程，${graph.links.length.toLocaleString("en-US")} 条先修关系。拖动旋转，滚轮缩放，点击行星查看。`,
+        );
   }
 
   // ---- 2D ----
@@ -253,7 +299,10 @@ export function createGraphView({ rows, element }) {
       ids.length === 0 ? element("p", { className: "graph-empty", textContent: emptyText }) : "",
       ...shown.map((id) => briefCard(id)),
       ids.length > shown.length
-        ? element("p", { className: "graph-empty", textContent: `and ${ids.length - shown.length} more` })
+        ? element("p", {
+            className: "graph-empty",
+            textContent: tr(`and ${ids.length - shown.length} more`, `还有 ${ids.length - shown.length} 门`),
+          })
         : "",
     );
   }
@@ -265,9 +314,14 @@ export function createGraphView({ rows, element }) {
       "section",
       { className: "graph-column" },
       element("h3", {
-        textContent: groups.length > 1 ? `Prerequisites (meet all ${groups.length})` : "Prerequisites",
+        textContent:
+          groups.length > 1
+            ? tr(`Prerequisites (meet all ${groups.length})`, `先修课（需全部满足 ${groups.length} 项）`)
+            : tr("Prerequisites", "先修课"),
       }),
-      groups.length === 0 ? element("p", { className: "graph-empty", textContent: "No prerequisites." }) : "",
+      groups.length === 0
+        ? element("p", { className: "graph-empty", textContent: tr("No prerequisites.", "没有先修课。") })
+        : "",
       ...groups.map((group) =>
         element(
           "div",
@@ -288,7 +342,10 @@ export function createGraphView({ rows, element }) {
         matches.length > shown.length
           ? element("p", {
               className: "graph-empty",
-              textContent: `and ${matches.length - shown.length} more; type more to narrow it down.`,
+              textContent: tr(
+                `and ${matches.length - shown.length} more; type more to narrow it down.`,
+                `还有 ${matches.length - shown.length} 门，多输入几个字可以缩小范围。`,
+              ),
             })
           : "",
       );
@@ -299,11 +356,19 @@ export function createGraphView({ rows, element }) {
       container2d.replaceChildren(
         element("h3", {
           className: "graph-2d-heading",
-          textContent: "Most needed courses: pick one to see what leads to it",
+          textContent: tr(
+            "Most needed courses: pick one to see what leads to it",
+            "最常被需要的课程：选一门看看哪些课通向它",
+          ),
         }),
         element("div", { className: "brief-grid" }, ...mostNeeded(graph, MOST_NEEDED_SHOWN).map((id) => briefCard(id))),
       );
-      status.textContent = notice || `${graph.nodes.length.toLocaleString("en-US")} courses have prerequisite links.`;
+      status.textContent =
+        notice ||
+        tr(
+          `${graph.nodes.length.toLocaleString("en-US")} courses have prerequisite links.`,
+          `${graph.nodes.length.toLocaleString("en-US")} 门课程有先修关系。`,
+        );
       return;
     }
     const around = neighborhood(graph, focusedId);
@@ -311,30 +376,40 @@ export function createGraphView({ rows, element }) {
     const center = element(
       "section",
       { className: "graph-column center" },
-      element("h3", { textContent: "This course" }),
+      element("h3", { textContent: tr("This course", "这门课") }),
       briefCard(focusedId, "focused"),
       element("a", {
         className: "graph-open-link",
         href: `#${focusedId.replace(" ", "-")}`,
-        textContent: "Open course page →",
+        textContent: tr("Open course page →", "打开课程页 →"),
       }),
       element("p", {
         className: "graph-empty",
-        textContent: `${node.requirements.length} requirement${node.requirements.length === 1 ? "" : "s"}, needed by ${node.dependents.length}.`,
+        textContent: tr(
+          `${node.requirements.length} requirement${node.requirements.length === 1 ? "" : "s"}, needed by ${node.dependents.length}.`,
+          `${node.requirements.length} 项要求，${node.dependents.length} 门课需要它。`,
+        ),
       }),
     );
     container2d.replaceChildren(
       element(
         "div",
         { className: "graph-columns" },
-        column("2 steps before", around.before2, "Nothing further back."),
+        column(tr("2 steps before", "往前两步"), around.before2, tr("Nothing further back.", "再往前没有了。")),
         requirementsColumn(node),
         center,
-        column("Unlocks", around.after1, "No course lists it as a prerequisite."),
-        column("2 steps after", around.after2, "Nothing further ahead."),
+        column(
+          tr("Unlocks", "解锁"),
+          around.after1,
+          tr("No course lists it as a prerequisite.", "没有课程把它列为先修课。"),
+        ),
+        column(tr("2 steps after", "往后两步"), around.after2, tr("Nothing further ahead.", "再往后没有了。")),
       ),
     );
-    status.textContent = `${focusedId}: what it needs on the left, what it unlocks on the right.`;
+    status.textContent = tr(
+      `${focusedId}: what it needs on the left, what it unlocks on the right.`,
+      `${focusedId}：左边是它需要的课，右边是它解锁的课。`,
+    );
   }
 
   // ---- Mode and focus ----
@@ -426,7 +501,10 @@ export function createGraphView({ rows, element }) {
           { className: "picker-option suggestion", id: `suggestion-${i}` },
           element("span", { className: "code", textContent: id }),
           element("span", { className: "name", textContent: node.title }),
-          element("span", { className: "count", textContent: `needed by ${node.dependents.length}` }),
+          element("span", {
+            className: "count",
+            textContent: tr(`needed by ${node.dependents.length}`, `${node.dependents.length} 门课需要它`),
+          }),
         );
         option.style.setProperty("--hue", subjectHue(node.subject));
         option.style.setProperty("--i", i);
@@ -524,8 +602,11 @@ export function createGraphView({ rows, element }) {
         const exists =
           rows("SELECT 1 FROM courses WHERE subject = ? AND number = ?", [route.subject, route.number]).length > 0;
         notice = exists
-          ? `${id} has no prerequisite links (it needs nothing and nothing needs it), so it isn't on the map.`
-          : `There's no course ${id} in the app's data.`;
+          ? tr(
+              `${id} has no prerequisite links (it needs nothing and nothing needs it), so it isn't on the map.`,
+              `${id} 没有先修关系（它不需要别的课，也没有课需要它），所以不在星图上。`,
+            )
+          : tr(`There's no course ${id} in the app's data.`, `数据里没有课程 ${id}。`);
       }
       updateFilter();
       draw();

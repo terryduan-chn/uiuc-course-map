@@ -2133,6 +2133,11 @@ body.is-home .home-map {
     height: 36px;
   }
 
+  .language-toggle {
+    height: 36px;
+    padding: 0 10px;
+  }
+
   .site-nav {
     display: flex;
     order: 3;
@@ -2234,6 +2239,25 @@ body.is-home .home-map {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.language-toggle {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.language-toggle:hover,
+.language-toggle:focus-visible {
+  border-color: var(--accent);
 }
 
 .theme-toggle {

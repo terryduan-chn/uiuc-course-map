@@ -1,7 +1,10 @@
-// The #docs page: the app's documentation (docs/docs.html), one topic at a time, with a table of
+// The #docs page: the app's documentation (docs/docs.html, or docs.zh.html in Chinese), one topic at a time, with a table of
 // contents beside it and Previous / Next under it. Every topic has its own address, #docs/<id>,
 // so one click in the contents (or a shared link) opens it. A topic's <figure data-demo="#plan">
 // becomes a live demo: the app itself in a frame, on a sample plan (see demo-mode.js).
+
+import { tr } from "./i18n.js";
+import { termText } from "./terms.js";
 
 /**
  * @param {object} options
@@ -37,7 +40,10 @@ export function createDocsView({ element, meta }) {
     figure.querySelector("iframe")?.remove();
     const frame = element("iframe", {
       src: `index.html?demo${figure.dataset.demo}`,
-      title: `Live demo: ${figure.querySelector("figcaption").textContent}`,
+      title: tr(
+        `Live demo: ${figure.querySelector("figcaption").textContent}`,
+        `在线演示：${figure.querySelector("figcaption").textContent}`,
+      ),
     });
     frame.addEventListener("load", () => matchTheme(frame));
     figure.prepend(frame);
@@ -49,7 +55,10 @@ export function createDocsView({ element, meta }) {
     return element(
       "a",
       { href: `#docs/${id}`, className: `docs-pager-link ${direction}` },
-      element("span", { className: "docs-pager-label", textContent: direction === "next" ? "Next →" : "← Previous" }),
+      element("span", {
+        className: "docs-pager-label",
+        textContent: direction === "next" ? tr("Next →", "下一篇 →") : tr("← Previous", "← 上一篇"),
+      }),
       element("span", { className: "docs-pager-title", textContent: title }),
     );
   }
@@ -82,7 +91,7 @@ export function createDocsView({ element, meta }) {
     const content = element("article", { className: "docs-content" });
     content.innerHTML = html; // our own file, served with the page
     for (const slot of content.querySelectorAll("[data-meta]")) {
-      if (meta[slot.dataset.meta]) slot.textContent = meta[slot.dataset.meta];
+      if (meta[slot.dataset.meta]) slot.textContent = termText(meta[slot.dataset.meta]);
     }
     for (const figure of content.querySelectorAll("figure[data-demo]")) {
       figure.classList.add("docs-demo");
@@ -90,11 +99,14 @@ export function createDocsView({ element, meta }) {
         element(
           "p",
           { className: "docs-demo-note" },
-          "Live demo on a sample plan: try anything, your own plan doesn't change. ",
+          tr(
+            "Live demo on a sample plan: try anything, your own plan doesn't change. ",
+            "这是用示例计划做的在线演示，可以随便试，不会改动你自己的计划。",
+          ),
           element("button", {
             type: "button",
             className: "docs-demo-reset",
-            textContent: "Start over",
+            textContent: tr("Start over", "重新开始"),
             onclick: () => startDemo(figure),
           }),
         ),
@@ -112,7 +124,7 @@ export function createDocsView({ element, meta }) {
     }
     const contents = element(
       "nav",
-      { className: "docs-toc", ariaLabel: "Contents" },
+      { className: "docs-toc", ariaLabel: tr("Contents", "目录") },
       ...[...groups].map(([group, items]) =>
         element(
           "div",
@@ -126,7 +138,7 @@ export function createDocsView({ element, meta }) {
     const menu = element(
       "details",
       { className: "docs-toc-menu" },
-      element("summary", { textContent: "Contents" }),
+      element("summary", { textContent: tr("Contents", "目录") }),
       contents,
     );
     // Wide screens show the contents as a sidebar, always open.
@@ -137,16 +149,22 @@ export function createDocsView({ element, meta }) {
     contents.addEventListener("click", (event) => {
       if (event.target.closest("a") && !wide.matches) menu.open = false;
     });
-    const pager = element("nav", { className: "docs-pager", ariaLabel: "Previous and next topics" });
+    const pager = element("nav", {
+      className: "docs-pager",
+      ariaLabel: tr("Previous and next topics", "上一篇和下一篇"),
+    });
     content.append(pager);
     view.replaceChildren(
       element(
         "header",
         { className: "docs-header" },
-        element("h1", { textContent: "UIUC Course Map docs" }),
+        element("h1", { textContent: tr("UIUC Course Map docs", "UIUC Course Map 文档") }),
         element("p", {
           className: "docs-lead",
-          textContent: "How to use every part of the app, how it works, and answers to common questions.",
+          textContent: tr(
+            "How to use every part of the app, how it works, and answers to common questions.",
+            "这里介绍应用每个部分的用法、它的工作原理，以及常见问题的解答。",
+          ),
         }),
       ),
       element("div", { className: "docs-layout" }, element("aside", { className: "docs-side" }, menu), content),
@@ -160,9 +178,9 @@ export function createDocsView({ element, meta }) {
   }
 
   async function load() {
-    view.replaceChildren(element("p", { className: "status", textContent: "Loading the docs…" }));
+    view.replaceChildren(element("p", { className: "status", textContent: tr("Loading the docs…", "正在加载文档…") }));
     try {
-      const response = await fetch("docs/docs.html");
+      const response = await fetch(tr("docs/docs.html", "docs/docs.zh.html"));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       build(await response.text());
       if (!view.hidden) showSection(wanted);
@@ -171,7 +189,10 @@ export function createDocsView({ element, meta }) {
       view.replaceChildren(
         element("p", {
           className: "status error",
-          textContent: "Couldn't load the docs. Check your connection and reload the page.",
+          textContent: tr(
+            "Couldn't load the docs. Check your connection and reload the page.",
+            "文档加载失败，请检查网络后刷新页面。",
+          ),
         }),
       );
       loading = null; // the next visit tries again

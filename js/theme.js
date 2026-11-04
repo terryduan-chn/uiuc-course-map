@@ -1,6 +1,8 @@
 // The light/dark switch in the top bar. The choice is saved in this browser; until there is
 // one, the page follows the computer's setting (index.html applies it before the first paint).
 
+import { tr } from "./i18n.js";
+
 const THEME_KEY = "theme";
 const REVEAL_MS = 650;
 
@@ -11,8 +13,11 @@ export function setUpThemeToggle(button) {
   const root = document.documentElement;
   const describe = () => {
     const dark = root.dataset.theme !== "light";
-    button.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
-    button.title = dark ? "Light theme" : "Dark theme";
+    button.setAttribute(
+      "aria-label",
+      dark ? tr("Switch to light theme", "切换到浅色主题") : tr("Switch to dark theme", "切换到深色主题"),
+    );
+    button.title = dark ? tr("Light theme", "浅色主题") : tr("Dark theme", "深色主题");
   };
   describe();
 

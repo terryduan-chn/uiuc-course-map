@@ -2,6 +2,7 @@
 // one program's requirements checked against your Taken and Planned courses. Unofficial: it shows
 // the catalog's wording, and doesn't work out choices like "select two".
 
+import { tr } from "./i18n.js";
 import { buildAutoPlan } from "./auto-plan.js";
 import { missingRequirements } from "./graph-data.js";
 import { focusKey, keepFocus, myCourses } from "./my-courses.js";
@@ -44,22 +45,24 @@ export function createMajorsView({ rows, element, getGraph }) {
   function standing(id, taken) {
     const status = statusOf(id);
     if (status) return "";
-    if (!titles.has(id)) return element("span", { className: "major-note", textContent: "not in the app's data" });
+    if (!titles.has(id))
+      return element("span", { className: "major-note", textContent: tr("not in the app's data", "数据里没有") });
     return missingRequirements(getGraph(), id, taken).length === 0
-      ? element("span", { className: "audit-chip ready", textContent: "can take now" })
+      ? element("span", { className: "audit-chip ready", textContent: tr("can take now", "现在可修") })
       : "";
   }
 
   /** One way to meet a row: its courses, each with its own + Plan. */
   function optionLine(courses, index, row, taken) {
-    const title = index === 0 && row.title ? row.title : courses.map((id) => titles.get(id) ?? "").join(" and ");
+    const title =
+      index === 0 && row.title ? row.title : courses.map((id) => titles.get(id) ?? "").join(tr(" and ", " 和 "));
     return element(
       "div",
       { className: "major-option" },
       element(
         "span",
         { className: "major-codes" },
-        index > 0 ? "or " : "",
+        index > 0 ? tr("or ", "或 ") : "",
         ...courses.flatMap((id, position) => (position > 0 ? [" & ", courseLink(id)] : [courseLink(id)])),
       ),
       element("span", { className: "major-title" }, ...wording(title)),
@@ -99,7 +102,12 @@ export function createMajorsView({ rows, element, getGraph }) {
       "section",
       { className: "major-table" },
       element("ul", {}, ...item.rows.map((row) => tableRow(row, taken))),
-      item.total ? element("p", { className: "major-total", textContent: `Total hours: ${item.total}` }) : "",
+      item.total
+        ? element("p", {
+            className: "major-total",
+            textContent: tr(`Total hours: ${item.total}`, `总学分：${item.total}`),
+          })
+        : "",
     );
   }
 
@@ -137,15 +145,29 @@ export function createMajorsView({ rows, element, getGraph }) {
     planNote = {
       title:
         added.size === 0
-          ? "No courses added"
-          : `Added ${added.size} course${added.size === 1 ? "" : "s"}, ${termLabel(terms[0])} to ${termLabel(terms.at(-1))}`,
+          ? tr("No courses added", "没有加入课程")
+          : tr(
+              `Added ${added.size} course${added.size === 1 ? "" : "s"}, ${termLabel(terms[0])} to ${termLabel(terms.at(-1))}`,
+              `已加入 ${added.size} 门课，从 ${termLabel(terms[0])} 到 ${termLabel(terms.at(-1))}`,
+            ),
       lines: [
         extra > 0
-          ? `${extra} of them ${extra === 1 ? "is a prerequisite" : "are prerequisites"} these courses need.`
+          ? tr(
+              `${extra} of them ${extra === 1 ? "is a prerequisite" : "are prerequisites"} these courses need.`,
+              `其中 ${extra} 门是这些课需要的先修课。`,
+            )
           : "",
-        missed.length > 0 ? `Not offered lately, so not added: ${missed.join(", ")}.` : "",
+        missed.length > 0
+          ? tr(
+              `Not offered lately, so not added: ${missed.join(", ")}.`,
+              `最近没有开课，所以没有加入：${missed.join("、")}。`,
+            )
+          : "",
         wanted.menus > 0
-          ? `${wanted.menus} list${wanted.menus === 1 ? "" : "s"} of choices left for you to pick from, plus Gen Eds and electives.`
+          ? tr(
+              `${wanted.menus} list${wanted.menus === 1 ? "" : "s"} of choices left for you to pick from, plus Gen Eds and electives.`,
+              `还有 ${wanted.menus} 组选课列表留给你自己选，通识和选修课也一样。`,
+            )
           : "",
       ].filter(Boolean),
       undo: added.size > 0 ? undo : null,
@@ -166,7 +188,7 @@ export function createMajorsView({ rows, element, getGraph }) {
         { className: "plan-change-text" },
         element("strong", { textContent: title }),
         ...lines.map((line) => element("p", { textContent: line })),
-        element("a", { href: "#plan", textContent: "See My plan →" }),
+        element("a", { href: "#plan", textContent: tr("See My plan →", "查看我的计划 →") }),
       ),
       element(
         "div",
@@ -175,7 +197,7 @@ export function createMajorsView({ rows, element, getGraph }) {
           ? element("button", {
               type: "button",
               className: "btn btn-primary",
-              textContent: "Undo",
+              textContent: tr("Undo", "撤销"),
               onclick: () => {
                 planNote = null;
                 myCourses.restore(undo);
@@ -186,8 +208,8 @@ export function createMajorsView({ rows, element, getGraph }) {
           type: "button",
           className: "plan-remove",
           textContent: "✕",
-          title: "Close this note",
-          ariaLabel: "Close this note",
+          title: tr("Close this note", "关闭这条提示"),
+          ariaLabel: tr("Close this note", "关闭这条提示"),
           onclick: () => {
             planNote = null;
             keepFocus(draw);
@@ -225,13 +247,16 @@ export function createMajorsView({ rows, element, getGraph }) {
       element("a", {
         href: parent ? `#majors/${parent.path}` : "#majors",
         className: "major-back",
-        textContent: parent ? `← ${parent.name}` : "← All majors",
+        textContent: parent ? `← ${parent.name}` : tr("← All majors", "← 全部专业"),
       }),
       element("h2", { textContent: program.name }),
       element(
         "p",
         { className: "major-meta" },
-        [program.college, program.total_hours && `${program.total_hours} hours to graduate`]
+        [
+          program.college,
+          program.total_hours && tr(`${program.total_hours} hours to graduate`, `毕业需要 ${program.total_hours} 学分`),
+        ]
           .filter(Boolean)
           .join(" · "),
       ),
@@ -240,9 +265,9 @@ export function createMajorsView({ rows, element, getGraph }) {
             "p",
             { className: "major-progress" },
             element("strong", { textContent: done }),
-            " taken · ",
+            tr(" taken · ", " 门已修 · "),
             element("strong", { textContent: planned }),
-            " planned among the courses listed here",
+            tr(" planned among the courses listed here", " 门已计划（只算这里列出的课）"),
           )
         : "",
       toPlan > 0
@@ -253,34 +278,46 @@ export function createMajorsView({ rows, element, getGraph }) {
               element("button", {
                 type: "button",
                 className: "btn btn-primary",
-                textContent: `Plan all ${toPlan} required course${toPlan === 1 ? "" : "s"}`,
+                textContent: tr(
+                  `Plan all ${toPlan} required course${toPlan === 1 ? "" : "s"}`,
+                  `把 ${toPlan} 门必修课全部加入计划`,
+                ),
                 onclick: () => planAll(blocks),
               }),
               "major-plan-all",
             ),
             element("span", {
               className: "major-note",
-              textContent: `Adds them from ${termLabel(nextTerm())} on, in prerequisite order. Lists of choices, Gen Eds and electives stay for you to pick.`,
+              textContent: tr(
+                `Adds them from ${termLabel(nextTerm())} on, in prerequisite order. Lists of choices, Gen Eds and electives stay for you to pick.`,
+                `从 ${termLabel(nextTerm())} 起，按先修顺序排好。选课列表、通识和选修课留给你自己选。`,
+              ),
             }),
           )
         : "",
       element(
         "p",
         { className: "audit-privacy" },
-        "Unofficial: this is the catalog's wording with your courses marked, not a degree check. Lines with choices like “select two” aren't worked out; your audit and advisor have the final word. ",
+        tr(
+          "Unofficial: this is the catalog's wording with your courses marked, not a degree check. Lines with choices like “select two” aren't worked out; your audit and advisor have the final word. ",
+          "非官方：这里是目录原文加上你的课程标记，不算学位审核。“select two”这类可选项不会自动判断，最终以你的 audit 和 advisor 为准。",
+        ),
         element("a", {
           href: `${CATALOG}${program.path}/`,
           target: "_blank",
           rel: "noopener",
-          textContent: "Official catalog page ↗",
+          textContent: tr("Official catalog page ↗", "官方目录页面 ↗"),
         }),
       ),
-      concentrations.length > 0 ? programLinks("Concentrations", concentrations) : "",
+      concentrations.length > 0 ? programLinks(tr("Concentrations", "方向"), concentrations) : "",
       blocks.length > 0
         ? element("article", { className: "major-requirements" }, ...blocks.map((item) => block(item, taken)))
         : element("p", {
             className: "plan-empty",
-            textContent: "The catalog page lists no requirements here. See the official page above.",
+            textContent: tr(
+              "The catalog page lists no requirements here. See the official page above.",
+              "目录页面没有在这里列出要求，请看上面的官方页面。",
+            ),
           }),
       planAllNote(),
     );
@@ -291,7 +328,9 @@ export function createMajorsView({ rows, element, getGraph }) {
     const concentrations = major.concentrations.length;
     const details = [
       arrangement === "letter" ? major.college : "",
-      concentrations > 0 ? `${concentrations} concentration${concentrations === 1 ? "" : "s"}` : "",
+      concentrations > 0
+        ? tr(`${concentrations} concentration${concentrations === 1 ? "" : "s"}`, `${concentrations} 个方向`)
+        : "",
     ].filter(Boolean);
     return element(
       "li",
@@ -310,7 +349,10 @@ export function createMajorsView({ rows, element, getGraph }) {
         sections: [
           element("p", {
             className: "plan-empty",
-            textContent: `No major or concentration matches “${query.trim()}”.`,
+            textContent: tr(
+              `No major or concentration matches “${query.trim()}”.`,
+              `没有匹配“${query.trim()}”的专业或方向。`,
+            ),
           }),
         ],
       };
@@ -333,7 +375,7 @@ export function createMajorsView({ rows, element, getGraph }) {
       element("button", {
         type: "button",
         textContent: label,
-        ariaLabel: `Jump to ${label}`,
+        ariaLabel: tr(`Jump to ${label}`, `跳到 ${label}`),
         onclick: () => sections[index].scrollIntoView({ block: "start" }),
       }),
     );
@@ -341,21 +383,24 @@ export function createMajorsView({ rows, element, getGraph }) {
 
   function drawList() {
     const results = element("div", { className: "major-results" });
-    const jumps = element("nav", { className: `major-jumps ${arrangement}`, ariaLabel: "Jump to a group" });
+    const jumps = element("nav", {
+      className: `major-jumps ${arrangement}`,
+      ariaLabel: tr("Jump to a group", "跳到某一组"),
+    });
     const count = element("p", { className: "major-meta", role: "status" });
     const showResults = () => {
       const { groups, sections } = listResults();
       results.replaceChildren(...sections);
       jumps.replaceChildren(...jumpBar(groups, sections));
       const shown = groups.reduce((sum, group) => sum + group.majors.length, 0);
-      count.textContent = `${shown} major${shown === 1 ? "" : "s"}`;
+      count.textContent = tr(`${shown} major${shown === 1 ? "" : "s"}`, `${shown} 个专业`);
     };
     showResults();
     const search = element("input", {
       type: "search",
       className: "major-search",
-      placeholder: "Search majors and concentrations",
-      ariaLabel: "Search majors and concentrations",
+      placeholder: tr("Search majors and concentrations", "搜索专业和方向"),
+      ariaLabel: tr("Search majors and concentrations", "搜索专业和方向"),
       value: query,
       oninput: (event) => {
         query = event.target.value;
@@ -376,11 +421,13 @@ export function createMajorsView({ rows, element, getGraph }) {
         `arrange-${value}`,
       );
     view.replaceChildren(
-      element("h2", { textContent: "Majors" }),
+      element("h2", { textContent: tr("Majors", "专业") }),
       element("p", {
         className: "audit-lead",
-        textContent:
+        textContent: tr(
           "Every undergraduate major and concentration, from the official Academic Catalog. Open one to see its requirements with your courses marked, and plan from there.",
+          "这里有官方 Academic Catalog 里的所有本科专业和方向。打开一个，就能看到它的要求和你的课程标记，并直接开始规划。",
+        ),
       }),
       element(
         "div",
@@ -388,8 +435,8 @@ export function createMajorsView({ rows, element, getGraph }) {
         search,
         element(
           "div",
-          { className: "view-toggle", role: "group", ariaLabel: "Arrange majors" },
-          arrangeButton("college", "By college"),
+          { className: "view-toggle", role: "group", ariaLabel: tr("Arrange majors", "专业排列方式") },
+          arrangeButton("college", tr("By college", "按学院")),
           arrangeButton("letter", "A–Z"),
         ),
       ),
@@ -404,8 +451,11 @@ export function createMajorsView({ rows, element, getGraph }) {
     if (program) drawProgram(program);
     else if (shownPath) {
       view.replaceChildren(
-        element("p", { className: "status error", textContent: "That major isn't in the catalog list." }),
-        element("a", { href: "#majors", className: "major-back", textContent: "← All majors" }),
+        element("p", {
+          className: "status error",
+          textContent: tr("That major isn't in the catalog list.", "目录列表里没有这个专业。"),
+        }),
+        element("a", { href: "#majors", className: "major-back", textContent: tr("← All majors", "← 全部专业") }),
       );
     } else drawList();
   }

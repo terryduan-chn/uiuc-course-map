@@ -35,19 +35,20 @@
   <body>
     <header class="topbar">
       <div class="topbar-inner">
-        <a href="#" class="brand" aria-label="UIUC Course Map, home">
+        <a href="#" class="brand" aria-label="UIUC Course Map, home" data-zh-label="UIUC Course Map 首页">
           <span class="brand-mark" aria-hidden="true"></span>
           UIUC Course Map
         </a>
         <div class="topbar-actions">
-          <nav class="site-nav" aria-label="Pages">
-            <a id="nav-courses" href="#">Courses</a>
-            <a id="nav-majors" href="#majors">Majors</a>
-            <a id="nav-graph" href="#graph">Star map</a>
-            <a id="nav-plan" href="#plan">My plan</a>
-            <a id="nav-audit" href="#audit">Audit</a>
-            <a id="nav-docs" href="#docs">Docs</a>
+          <nav class="site-nav" aria-label="Pages" data-zh-label="页面">
+            <a id="nav-courses" href="#" data-zh="课程">Courses</a>
+            <a id="nav-majors" href="#majors" data-zh="专业">Majors</a>
+            <a id="nav-graph" href="#graph" data-zh="星图">Star map</a>
+            <a id="nav-plan" href="#plan" data-zh="我的计划">My plan</a>
+            <a id="nav-audit" href="#audit" data-zh="学位审核">Audit</a>
+            <a id="nav-docs" href="#docs" data-zh="文档">Docs</a>
           </nav>
+          <button id="language-toggle" class="language-toggle" type="button"></button>
           <button id="theme-toggle" class="theme-toggle" type="button">
             <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="4.5" />
@@ -66,47 +67,57 @@
     <main>
       <div id="hero-wrap" class="hero-wrap">
         <section id="hero-intro" class="hero-intro" hidden>
-          <p class="eyebrow">University of Illinois · from the official Course Explorer</p>
-          <h1>Every UIUC course,<br />and what leads to what.</h1>
-          <p class="hero-lede">
+          <p class="eyebrow" data-zh="伊利诺伊大学 · 数据来自官方 Course Explorer">
+            University of Illinois · from the official Course Explorer
+          </p>
+          <h1 data-zh-html="UIUC 的每一门课，<br />以及课与课之间的关系。">
+            Every UIUC course,<br />and what leads to what.
+          </h1>
+          <p
+            class="hero-lede"
+            data-zh="查询任意课程，看它的先修课、平均 GPA 和开课时间，或者在星图里浏览所有先修关系。"
+          >
             Look up any course, see its prerequisites, average GPA and when it is offered, or fly through the star map
             of every prerequisite link.
           </p>
         </section>
 
         <div id="search-area" class="search-area" hidden>
-          <label class="search-label" for="search">Search by course code or title</label>
+          <label class="search-label" for="search" data-zh="按课程代码或名称搜索">Search by course code or title</label>
           <input
             id="search"
             class="search-input"
             type="search"
             placeholder="e.g. CS 225, math241, linear algebra"
+            data-zh-placeholder="例如 CS 225、math241、linear algebra"
             autocomplete="off"
             disabled
           />
           <div class="search-tools">
-            <span class="search-tools-label">Gen Ed</span>
+            <span class="search-tools-label" data-zh="通识要求">Gen Ed</span>
             <div id="gen-ed-filter" class="gen-ed-filter"></div>
           </div>
         </div>
 
         <div id="hero-actions" class="hero-actions" hidden>
-          <a class="btn btn-primary" href="#graph">Explore the star map <span aria-hidden="true">→</span></a>
+          <a class="btn btn-primary" href="#graph"
+            ><span data-zh="探索星图">Explore the star map</span> <span aria-hidden="true">→</span></a
+          >
           <button type="button" class="btn btn-ghost" id="browse-subjects">
-            Browse subjects <span aria-hidden="true">↓</span>
+            <span data-zh="按学科浏览">Browse subjects</span> <span aria-hidden="true">↓</span>
           </button>
         </div>
 
         <section id="hero-more" class="hero-more" hidden>
           <dl id="hero-stats" class="hero-stats"></dl>
           <div class="popular">
-            <h2 class="section-label">Most needed courses</h2>
+            <h2 class="section-label" data-zh="最常被需要的课程">Most needed courses</h2>
             <ul id="popular-courses" class="popular-list"></ul>
           </div>
         </section>
 
         <!-- A small 3D map of one course's links; the course changes every 5 seconds by the clock. -->
-        <section id="home-map" class="home-map" aria-label="Featured course">
+        <section id="home-map" class="home-map" aria-label="Featured course" data-zh-label="精选课程">
           <div id="home-map-canvas" class="home-map-canvas"></div>
           <div class="home-map-caption">
             <a id="home-map-course" class="home-map-course" href="#">
@@ -115,16 +126,18 @@
             </a>
             <p class="home-map-meta">
               <span id="home-map-counts"></span>
-              <a id="home-map-graph" class="home-map-graph" href="#graph">Open in star map →</a>
+              <a id="home-map-graph" class="home-map-graph" href="#graph" data-zh="在星图中打开 →"
+                >Open in star map →</a
+              >
             </p>
             <p class="feature-legend" aria-hidden="true">
-              <span class="needs">needs</span><span class="unlocks">unlocks</span>
+              <span class="needs" data-zh="需要">needs</span><span class="unlocks" data-zh="解锁">unlocks</span>
             </p>
           </div>
         </section>
       </div>
 
-      <p id="status" class="status" role="status">Loading course data…</p>
+      <p id="status" class="status" role="status" data-zh="正在加载课程数据…">Loading course data…</p>
 
       <section id="majors-view" class="majors-view" hidden></section>
       <section id="plan-view" class="plan-view" hidden></section>
@@ -134,7 +147,13 @@
 
       <section id="graph-view" class="graph-view" hidden>
         <div class="graph-toolbar">
-          <div id="graph-mode-toggle" class="view-toggle" role="group" aria-label="Graph style">
+          <div
+            id="graph-mode-toggle"
+            class="view-toggle"
+            role="group"
+            aria-label="Graph style"
+            data-zh-label="星图样式"
+          >
             <button type="button" data-view="3d" aria-pressed="true">3D</button>
             <button type="button" data-view="2d" aria-pressed="false">2D</button>
           </div>
@@ -144,7 +163,9 @@
               class="graph-search"
               type="search"
               placeholder="Type MATH, CS 4, CS 225 or a title word"
+              data-zh-placeholder="输入 MATH、CS 4、CS 225 或课程名中的词"
               aria-label="Filter the graph by course code, subject or title"
+              data-zh-label="按课程代码、学科或名称筛选星图"
               role="combobox"
               aria-expanded="false"
               aria-controls="graph-suggestions"
@@ -152,7 +173,13 @@
               autocomplete="off"
             />
             <div class="picker-panel">
-              <ul id="graph-suggestions" class="picker-list" role="listbox" aria-label="Matching courses"></ul>
+              <ul
+                id="graph-suggestions"
+                class="picker-list"
+                role="listbox"
+                aria-label="Matching courses"
+                data-zh-label="匹配的课程"
+              ></ul>
             </div>
           </div>
           <div id="graph-subject" class="graph-subject"></div>
@@ -162,14 +189,16 @@
             type="button"
             aria-pressed="false"
             title="Show only your taken and planned courses and what they let you take next"
+            data-zh-title="只显示你已修和已计划的课，以及接下来可以修的课"
           >
-            <span class="mine-dots" aria-hidden="true"><i></i><i></i><i></i></span> My courses
+            <span class="mine-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span data-zh="我的课程">My courses</span>
           </button>
         </div>
         <p id="graph-status" class="status graph-status" role="status"></p>
         <div id="graph-stage" class="graph-stage">
           <div id="graph-3d" class="graph-3d">
-            <button id="graph-back" class="graph-back" type="button" hidden>← Back to map</button>
+            <button id="graph-back" class="graph-back" type="button" hidden data-zh="← 返回星图">← Back to map</button>
           </div>
           <aside id="graph-card" class="graph-card" hidden></aside>
         </div>
@@ -178,19 +207,26 @@
 
       <section id="subjects" class="subjects" hidden>
         <div class="subjects-header">
-          <h2 id="subjects-heading">Browse by subject</h2>
+          <h2 id="subjects-heading" data-zh="按学科浏览">Browse by subject</h2>
           <div class="subjects-tools">
-            <label class="visually-hidden" for="subject-filter">Filter subjects</label>
+            <label class="visually-hidden" for="subject-filter" data-zh="筛选学科">Filter subjects</label>
             <input
               id="subject-filter"
               class="subject-filter"
               type="search"
               placeholder="Filter subjects, e.g. math, CS, psychology"
+              data-zh-placeholder="筛选学科，例如 math、CS、psychology"
               autocomplete="off"
             />
-            <div id="subject-view-toggle" class="view-toggle" role="group" aria-label="Show subjects as">
-              <button type="button" data-view="cards" aria-pressed="true">Cards</button>
-              <button type="button" data-view="list" aria-pressed="false">List</button>
+            <div
+              id="subject-view-toggle"
+              class="view-toggle"
+              role="group"
+              aria-label="Show subjects as"
+              data-zh-label="学科显示方式"
+            >
+              <button type="button" data-view="cards" aria-pressed="true" data-zh="卡片">Cards</button>
+              <button type="button" data-view="list" aria-pressed="false" data-zh="列表">List</button>
             </div>
           </div>
         </div>
@@ -201,11 +237,17 @@
       <div id="layout" class="layout" hidden>
         <section class="list-panel">
           <div id="list-header" class="list-header"></div>
-          <div id="course-view-toggle" class="view-toggle list-toggle" role="group" aria-label="Show courses as">
-            <button type="button" data-view="cards" aria-pressed="true">Cards</button>
-            <button type="button" data-view="list" aria-pressed="false">List</button>
+          <div
+            id="course-view-toggle"
+            class="view-toggle list-toggle"
+            role="group"
+            aria-label="Show courses as"
+            data-zh-label="课程显示方式"
+          >
+            <button type="button" data-view="cards" aria-pressed="true" data-zh="卡片">Cards</button>
+            <button type="button" data-view="list" aria-pressed="false" data-zh="列表">List</button>
           </div>
-          <ul id="results" class="results" aria-label="Courses"></ul>
+          <ul id="results" class="results" aria-label="Courses" data-zh-label="课程"></ul>
         </section>
         <article id="detail" class="detail"></article>
       </div>

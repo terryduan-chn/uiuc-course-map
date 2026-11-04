@@ -1,0 +1,415 @@
+<!--
+  The Docs page in Chinese. It keeps the same topics, ids and demos as docs.html (a test checks that).
+-->
+
+<section id="getting-started" data-group="从这里开始">
+  <h2>快速上手</h2>
+  <p>
+    UIUC Course Map 列出 UIUC 的每一门课，包括官方介绍、先修课、平均 GPA
+    和开课学期，还能帮你一学期一学期地规划剩下的学位。 所有课程都来自官方 Course Explorer 数据，没有一门是手动录入的。
+  </p>
+  <p>你可以按任意顺序这样用它：</p>
+  <ul>
+    <li><strong>查资料：</strong>找到一门课，看它需要什么、又能通向什么。</li>
+    <li><strong>标记课程：</strong>记下你修过的、正在修的和打算修的课。</li>
+    <li><strong>规划学位：</strong>上传学位 audit，让自动规划排好各个学期，再自己调整。</li>
+  </ul>
+  <p class="docs-note">
+    不需要注册账号。你标记的所有内容都只保存在这个浏览器里（详见<a href="#docs/your-data">你的数据</a>）。
+  </p>
+  <figure data-demo="">
+    <figcaption>首页。可以在搜索框里搜索，也可以点“探索星图”。</figcaption>
+  </figure>
+</section>
+
+<section id="find-courses" data-group="使用应用">
+  <h2>查找课程</h2>
+  <ol>
+    <li>
+      点顶栏的<strong>课程</strong>，在搜索框里输入。课程代码有没有空格都行（<em>CS 225</em
+      >、<em>cs225</em>），也可以输入课程名里的词（<em>linear algebra</em>）。
+    </li>
+    <li>
+      也可以直接浏览：在首页选一个学科（学科上方的框可以筛选，比如
+      <em>comp sci</em>），再用<strong>跳到</strong>前往某个课程编号或级别（100、200……）。
+    </li>
+    <li><strong>卡片</strong> / <strong>列表</strong>可以切换课程的排列方式。</li>
+  </ol>
+  <p>
+    每张课程卡片上都有<strong>+ 计划</strong>，点一下就能加入下学期。已经标记过的课会改为显示状态：<em>✓ 已修</em
+    >、<em>在修</em>、<em>✓ 已有学分</em>，或者计划的学期。
+  </p>
+  <figure data-demo="">
+    <figcaption>试着搜一下：输入课程代码，或课程名里的几个词。</figcaption>
+  </figure>
+</section>
+
+<section id="gen-eds" data-group="使用应用">
+  <h2>查找通识课</h2>
+  <ol>
+    <li>打开搜索框下方的<strong>通识要求</strong>菜单，选一项或多项要求。</li>
+    <li>
+      列表会显示<em>同时满足</em>这些要求的课程，平均 GPA 高的排在前面。选两项（比如 Humanities 和 Western
+      Cultures）就能找到一门课同时算两项的课程。
+    </li>
+    <li>也可以再在搜索框里输入，进一步缩小范围。</li>
+  </ol>
+  <p>在课程页上，每个通识标签都是一个按钮，点一下就能看到满足同一项通识要求的所有课程。</p>
+</section>
+
+<section id="course-pages" data-group="使用应用">
+  <h2>课程页</h2>
+  <p>打开任意一门课，可以看到：</p>
+  <ul>
+    <li><strong>平均 GPA</strong>、拿到 4.0 的学生比例，以及下次或最近一次开课的时间。</li>
+    <li>
+      <strong>先修课</strong>，按要求分组：每一项要么是<em>必修</em>，要么是 <em>n 选 k</em>，每门课都能点开。下面附有
+      UIUC 的官方原文。
+    </li>
+    <li><strong>课程介绍</strong>、选课信息（限制、费用）和开过课的学期。</li>
+    <li><strong>在星图中打开</strong>，看这门课需要什么、解锁什么。</li>
+  </ul>
+  <p>
+    标题下方的框用来标记课程：<strong>+ 加入计划</strong
+    >（已帮你选好最合适的学期）、<strong>我修过了</strong>或<strong>我正在修</strong>。详见<a href="#docs/mark-courses"
+      >标记课程</a
+    >。
+  </p>
+  <figure data-demo="#CS-225">
+    <figcaption>一个课程页：数据、标记框、先修课和课程介绍。</figcaption>
+  </figure>
+</section>
+
+<section id="star-map" data-group="使用应用">
+  <h2>星图</h2>
+  <p>星图把每门有先修关系的课显示成一颗行星。行星越大，需要它的课越多；颜色代表学科。</p>
+  <ol>
+    <li>拖动可以旋转，滚轮可以缩放，点击行星可以打开它。</li>
+    <li>
+      也可以在星图的搜索框里输入：课程代码（<em>CS 225</em>）、学科（<em>MATH</em>）、编号开头（<em>CS 4</em
+      >）或课程名里的词。学科菜单可以把星图缩小到几个学科。
+    </li>
+    <li>
+      打开一门课后，<strong>金色</strong>连线是它需要的课，<strong>蓝色</strong>连线是它解锁的课。<strong
+        >← 返回星图</strong
+      >回到完整星图。
+    </li>
+    <li><strong>2D</strong> 用分栏显示同一门课：往前两步、这门课、往后两步。</li>
+    <li><strong>我的课程</strong>会给你已修、已计划和接下来可以修的行星上色。</li>
+  </ol>
+  <figure data-demo="#graph">
+    <figcaption>星图。点击一颗行星，或搜索一门课飞过去。</figcaption>
+  </figure>
+</section>
+
+<section id="majors" data-group="使用应用">
+  <h2>专业</h2>
+  <p>
+    <strong>专业</strong>页按学院列出所有本科专业和方向。它不需要 audit，所以如果你还在选专业，或者还没上传
+    audit，可以从这里开始。
+  </p>
+  <ol>
+    <li>
+      按名称搜索，或从列表里打开一个专业。搜索方向也能找到它所属的专业。列表可以<strong>按学院</strong>或按
+      <strong>A–Z</strong> 排列，用上方的跳转栏可以跳到某个学院或字母。
+    </li>
+    <li>
+      每个专业页都按目录原本的顺序和措辞显示要求。已修的行是绿色，已计划的行是蓝色，<em>现在可修</em>表示你已满足这门课的先修要求。
+    </li>
+    <li>点一门课上的<strong>+ 计划</strong>，就能把它放进“我的计划”的下学期。</li>
+    <li>
+      <strong>把必修课全部加入计划</strong
+      >会从下学期起，按先修顺序加入每门必修课，以及它们需要的先修课。选课列表、通识和选修课留给你自己选，<strong>撤销</strong>可以把它们全部取消。
+    </li>
+  </ol>
+  <p class="docs-note">
+    这不是官方结果：这里只是目录原文加上你的课程标记，不算学位审核。“select two”这类可选项不会替你判断。最终以你的<a
+      href="#docs/degree-audit"
+      >学位 audit</a
+    >
+    和 advisor 为准。
+  </p>
+  <figure data-demo="#majors/engineering/computer-science-bs">
+    <figcaption>示例计划下的 Computer Science：点一门课上的“+ 计划”试试。</figcaption>
+  </figure>
+</section>
+
+<section id="mark-courses" data-group="使用应用">
+  <h2>标记课程</h2>
+  <p>一门课可以有四种标记：</p>
+  <dl>
+    <dt>已修</dt>
+    <dd>你已经修完了。在课程页点<strong>我修过了</strong>。</dd>
+    <dt>在修</dt>
+    <dd>
+      你这学期正在修。在课程页点<strong>我正在修</strong>，或在“我的计划”里点<strong>添加为在修</strong>。计算先修要求时，它算作已修。
+    </dd>
+    <dt>入学前学分</dt>
+    <dd>AP、水平考试或转学分。这些来自你的学位 audit。</dd>
+    <dt>已计划</dt>
+    <dd>你打算在某个学期修。在课程页点<strong>+ 加入计划</strong>，或在课程卡片上点<strong>+ 计划</strong>。</dd>
+  </dl>
+  <p>
+    要取消标记，再点一次亮着的<strong>已修</strong>或<strong>已计划</strong>按钮，或者点“我的计划”里课程卡片角上的
+    <strong>✕</strong>（也可以在 <strong>⋯</strong> 菜单里选<strong>从计划中移除</strong>）。上传<a
+      href="#docs/degree-audit"
+      >学位 audit</a
+    >
+    可以一次标记所有修过的和正在修的课。
+  </p>
+  <figure data-demo="#CS-225">
+    <figcaption>把这门课标记为已修或已计划，然后再看看它的变化。</figcaption>
+  </figure>
+</section>
+
+<section id="my-plan" data-group="使用应用">
+  <h2>我的计划</h2>
+  <p><strong>我的计划</strong>按学期排列你的课程：从本学期起四年的秋季和春季，课程排得更远时会自动延长。</p>
+  <ul>
+    <li>
+      <strong>进度条：</strong>显示已获得、已计划和待规划的学分，总数是你的学位需要的学分（来自 audit；没有 audit 时按
+      120 学分算）。
+    </li>
+    <li>
+      <strong>本学期</strong
+      >显示你正在修的课，标记为<em>在修</em>。<strong>入学前学分</strong>有自己的卡片，不算在任何学期里。
+    </li>
+    <li><strong>移动课程：</strong>把卡片拖到另一个学期，或用 <strong>←</strong> 和 <strong>→</strong>。</li>
+    <li>
+      <strong>查看改动的影响：</strong
+      >移动或移除一门课后，会有提示告诉你哪些课要推迟或不能再修，以及修完时间有没有变。受影响的课会加上边框，其他课不会自己移动，<strong>撤销</strong>可以恢复计划。
+    </li>
+    <li><strong>点击卡片</strong>可以看 GPA、开课季节、先修课和它解锁的课。</li>
+    <li>
+      课程下方的<strong>通识标签</strong>说明它计入哪些通识要求。一门课可以同时计入两项，比如 Humanities 和 Western
+      Cultures。
+    </li>
+    <li><strong>⋯</strong> 可以选学期、标记为已修或在修、换成满足同一要求的另一门课，或者移除这门课。</li>
+    <li>
+      <strong>红色标记</strong>指出问题：先修课没有排在更早的学期、这个学期不开这门课，或者这门课最近没开过。如果 UIUC
+      允许某门先修课“credit or concurrent registration”，它可以排在同一学期。
+    </li>
+    <li>学期不足 12 学分时显示<em>偏少</em>，超过 18 学分时显示<em>偏重</em>。</li>
+  </ul>
+  <p>
+    <strong>添加课程</strong
+    >可以按代码添加，状态可选已计划（放在你选的学期）、在修或已修。底部的<strong>接下来可以修</strong>列出先修要求已被你的计划覆盖的课程。
+  </p>
+  <figure data-demo="#plan">
+    <figcaption>我的计划：往下滚动到学期部分，然后点课程上的 ← → 或 ✕。</figcaption>
+  </figure>
+</section>
+
+<section id="auto-plan" data-group="使用应用">
+  <h2>自动规划</h2>
+  <p>
+    上传<a href="#docs/degree-audit">学位 audit</a>
+    后，“我的计划”里的<strong>自动规划我的学位</strong>会从下学期起，为你还需要的每项要求排课，每学期约 15 学分。
+  </p>
+  <ul>
+    <li>你自己计划的课不会变，自动规划会绕开它们来排。</li>
+    <li>它加入的课会标上<em>自动</em>，并注明用于哪项要求。</li>
+    <li>通识要求会变成<a href="#docs/gen-ed-slots">通识空位</a>，由你来填。</li>
+    <li>像“CS 397 or any 400-level course”这样的要求，会排上该学科的真实课程（CS 400 和 500 级的课，本科课优先）。</li>
+    <li>
+      学位要求之外还差的学分（多数学位总共 128 学分）会变成<strong>选修空位</strong>：每个 3 学分，任选一门课填上。
+    </li>
+    <li>运行后如果还有填不上的要求，提示里会列出来。</li>
+    <li><strong>重新规划</strong>会再运行一次；<strong>清除自动生成的</strong>会移除它加入的所有内容。</li>
+  </ul>
+  <p>规则详见<a href="#docs/how-auto-plan-chooses">自动规划怎么选课</a>。</p>
+  <figure data-demo="#plan">
+    <figcaption>带示例 audit 的“我的计划”：点“自动规划我的学位”，然后往下滚动。</figcaption>
+  </figure>
+</section>
+
+<section id="gen-ed-slots" data-group="使用应用">
+  <h2>通识空位</h2>
+  <p>
+    通识空位是一张虚线卡片，先为某项通识要求（比如<em>人文与艺术</em>）占个位置，等你之后再选课。它算 3
+    学分，可以像课程一样移动。
+  </p>
+  <p>
+    有些课能同时计入两项通识：比如一门 Humanities 或 Social Science 课同时也是 Western、Non-Western 或 U.S. Minority
+    Cultures 课。这时自动规划只会建一个<strong>共用空位</strong>（比如<em>人文与艺术 + 西方/比较文化</em
+    >），而不是两个，能省下 3
+    学分。它的课程列表会把两项都计入的课排在前面；如果你选了只计入一项的课，另一项会留下来成为单独的空位。
+  </p>
+  <ol>
+    <li>
+      点空位上的<strong>选课</strong>。课程按这个顺序排列：先是那个学期能修的，再是还能填另一个空位的，然后是 GPA
+      更高的。
+    </li>
+    <li>
+      选一门课，它就会取代空位。如果它还计入另一个空位（比如 Humanities 和 Western Cultures），那个空位也会一起填上。
+    </li>
+    <li>也可以在通识课的课程页上点<strong>用来填我的……空位</strong>，直接把它放进空位。</li>
+  </ol>
+  <p>
+    你也可以自己添加空位：在<strong>添加课程</strong>下面找到<em>或者先给通识课留个位置</em>。为空位选的课，<strong
+      >⋯</strong
+    >
+    菜单里有<strong>退回为空位</strong>；换课时，新课覆盖不到的空位会重新打开。
+  </p>
+  <figure data-demo="#plan">
+    <figcaption>往下滚动到虚线的通识空位，点“选课”。</figcaption>
+  </figure>
+</section>
+
+<section id="degree-audit" data-group="使用应用">
+  <h2>学位审核</h2>
+  <ol>
+    <li>在 uAchieve 里运行 audit，打开 <strong>Audit Results</strong> 标签页。</li>
+    <li>打印这个页面，选择<strong>另存为 PDF</strong>。</li>
+    <li>在<strong>学位审核</strong>页选择这个 PDF，或把它拖到框里。</li>
+  </ol>
+  <p>之后学位审核页会显示：</p>
+  <ul>
+    <li>
+      顶部的<strong>还剩什么</strong>：每项未完成的要求占一行，写明它需要什么，以及你的计划是否已覆盖（<em>已在计划中</em>、<em>部分已计划</em>或<em>尚未计划</em>）。点一行可以跳到对应位置。
+    </li>
+    <li>
+      每项未完成的要求和能计入它的课程，最合适的在前，并用颜色区分已计划、现在可修和需要先修课。修过的课只列一次，算作已计入；最近没开的课不会列出。
+    </li>
+    <li>对“几选一”的要求（比如 CS 的 focus area），显示每个选项你的计划能做到哪一步。最接近的会标出来并展开。</li>
+    <li>对通识要求，显示你的计划里已有什么：能计入的已计划课程和空位。</li>
+    <li>已完成的要求和部分，折叠在页面底部。</li>
+    <li>audit 上的 GPA（总、UIUC、技术课程和学院），每项都带学分数。“我的计划”里也会显示。</li>
+    <li><strong>用这份 audit 做计划</strong>，也就是运行<a href="#docs/auto-plan">自动规划</a>。</li>
+  </ul>
+  <p>
+    上传后还会标记你的课程：修完的算已修，本学期的算在修，AP、水平考试或转学分算入学前学分，每门课都用 audit 记的学分。
+  </p>
+  <p>
+    你的计划跟着 audit 走。上传更新的 audit
+    会用它重新开始计划；<strong>全部清除</strong>（学位审核页和“我的计划”里都有）会在询问后，把 audit
+    和整份计划从这个浏览器删除。
+  </p>
+  <p class="docs-note">
+    PDF 只在你的浏览器里读取，不会上传到任何地方。这里只保存要求、课程代码和
+    GPA，绝不保存你的姓名或学号。这份清单是非官方的，最终以 advisor 和官方 audit 为准。
+  </p>
+  <figure data-demo="#audit">
+    <figcaption>带示例 audit 的学位审核页。</figcaption>
+  </figure>
+</section>
+
+<section id="data-sources" data-group="工作原理">
+  <h2>数据来源</h2>
+  <ul>
+    <li>
+      <strong>课程</strong>来自 UIUC 官方 Course Explorer
+      数据：课程名、介绍、学分、先修课、通识要求和选课信息，范围从<span data-meta="oldest_catalog_searched">最早</span
+      >到<span data-meta="catalog_term">最新</span
+      >的目录。一门课出现在多个目录里时，用最新的条目；不在最新目录里的课，课程页上会注明。
+    </li>
+    <li>
+      <strong>专业和方向</strong>来自官方
+      <a href="https://catalog.illinois.edu/undergraduate/">Academic Catalog</a>，由导入脚本读取。
+    </li>
+    <li>
+      <strong>开课时间</strong>来自<span data-meta="oldest_term_searched">最早学期</span
+      >以来的课表。“仅秋季”或“仅春季”表示这些学期里它只在那个季节开过。
+    </li>
+    <li>
+      <strong>平均 GPA</strong> 和<strong>拿到 4.0 的比例</strong>（A 和 A+）来自 Wade Fagen-Ulmschneider 的 GPA
+      数据集，按学生人数加权。统计范围是<span data-meta="grades_from">最早学期</span>到<span data-meta="grades_through"
+        >最新学期</span
+      >，和他的
+      <a href="https://waf.cs.illinois.edu/discovery/gpa/">GPA 可视化</a
+      >用的是同样的近几年，所以数字一致。这几年没开过的课没有成绩数据，20 人及以下的班级也没有，因为学校不公布。
+    </li>
+  </ul>
+  <p>数据最后导入于 <span data-meta="imported_at">导入日期</span>。</p>
+</section>
+
+<section id="prerequisites" data-group="工作原理">
+  <h2>先修课是怎么读取的</h2>
+  <p>
+    Course Explorer
+    用一句话写出每门课的先修要求。应用会把它拆成几项要求：每项是一组课程，你需要修其中若干门（<em>必修</em>表示就是这一门，<em
+      >3 选 1</em
+    >
+    表示任选一门）。“Recommended”的课不算在内，“consent of instructor”这类不是课程的条件也不算。
+  </p>
+  <p>
+    如果原文写着“credit or concurrent registration in”某门课，那门课可以同一学期修，不必提前修：比如 CS 222 可以和 CS
+    225 一起修。计划、问题标记和自动规划都允许这样，课程页上也会写“可以同时修”。
+  </p>
+  <p>
+    这种读取只能尽量准确，所以每个课程页都附有官方原文，一切以原文为准。计划的问题标记、星图和自动规划用的都是这些要求分组。
+  </p>
+</section>
+
+<section id="how-auto-plan-chooses" data-group="工作原理">
+  <h2>自动规划怎么选课</h2>
+  <p>对你还需要的每项要求，自动规划都走最省事的路：</p>
+  <ol>
+    <li>优先用计划里已有、能计入这项要求的课。</li>
+    <li>其次是需要额外先修课最少的课。</li>
+    <li>然后本科课优先于研究生课（500 级）。</li>
+    <li>最后选平均 GPA 最高的。</li>
+  </ol>
+  <p>
+    如果要求写着“从这些方向里选一个”，它会选需要新课最少的方向。它还会加入所选课程需要的先修课，并排除<span
+      data-meta="oldest_term_searched"
+      >最早学期</span
+    >以来没开过的课。
+  </p>
+  <p>
+    然后它按顺序填学期。一门课会放进第一个满足条件的学期：先修课排在更早的学期（允许 concurrent registration
+    时也可以同一学期），而且这个季节开课。先修链最长的课先排，通识空位最后排。一个学期约 15
+    学分；只在一个季节开的课可以把学期撑到 18 学分，免得多等一年。
+  </p>
+</section>
+
+<section id="your-data" data-group="工作原理">
+  <h2>你的数据</h2>
+  <ul>
+    <li>
+      你标记的内容、计划、空位和 audit
+      里的要求，都保存在这台设备的这个浏览器里。没有账号，也没有服务器，你标记的内容不会发送到任何地方。
+    </li>
+    <li>换一个浏览器或设备，内容就是空的。想在那里使用，重新上传 audit 就行。</li>
+    <li><strong>全部清除</strong>会移除你的 audit 和计划；在浏览器里清除这个网站的数据，效果也一样。</li>
+    <li>audit 里只保存要求、课程代码和 GPA，绝不保存你的姓名或学号。</li>
+  </ul>
+</section>
+
+<section id="faq" data-group="帮助">
+  <h2>常见问题</h2>
+
+  <h3>本学期没有显示在修的课。</h3>
+  <p>
+    应用支持“在修”之前保存的课，看起来就是普通的已修课程。“我的计划”里会有提示：重新上传
+    audit，或点<strong>标记为在修</strong>。你也可以用<strong>添加为在修</strong>逐门添加。
+  </p>
+
+  <h3>我的计划不见了。</h3>
+  <p>
+    计划只保存在一台设备的一个浏览器里。请确认你用的是同一个浏览器，而且网站数据没有被清除。重新上传 audit
+    可以恢复课程，但已计划的课需要重新添加。
+  </p>
+
+  <h3>我知道的一门课不在应用里。</h3>
+  <p>
+    应用收录了<span data-meta="oldest_catalog_searched">最早目录</span>以来 Course Explorer
+    目录里的每门课。请检查代码（搜索也接受
+    <em>cs225</em> 这样的写法）。如果这些目录里都没有，这门课应该在那之前就停开了。
+  </p>
+
+  <h3>一门课不在星图上。</h3>
+  <p>只有需要别的课、或被别的课需要的课程才是行星。它的课程页上会说明。</p>
+
+  <h3>“我的计划”的学分和目录对不上。</h3>
+  <p>有 audit 时，已修课程用的是 audit 记的学分，可能和目录不同（有些水平考试学分算 0 学分）。</p>
+
+  <h3>计划和官方 audit 不一致。</h3>
+  <p>计划和自动规划都是非官方的，只能尽量准确。两者不一致时，以官方 audit 和你的 advisor 为准。</p>
+
+  <h3>一门课被标记为“仅秋季”开课。</h3>
+  <p>
+    <span data-meta="oldest_term_searched">最早学期</span
+    >以来，它只在秋季开过。院系确实会调整课表，所以依赖这一点之前，请先到 Course Explorer 确认。
+  </p>
+</section>

@@ -2,6 +2,7 @@
 // The PDF is read in this browser with pdf.js and never sent anywhere; only the requirements
 // course codes and GPAs are kept (in localStorage), never the student's name or ID.
 
+import { tr } from "./i18n.js";
 import {
   catalogYearLabel,
   gpaSummary,
@@ -22,10 +23,11 @@ import { missingRequirements } from "./graph-data.js";
 import { keepFocus, myCourses } from "./my-courses.js";
 import { SLOT_HOURS, slotKindFor, slotTitle } from "./plan-insights.js";
 import { courseFacts, requirementCourses } from "./requirement-courses.js";
-import { termLabel, termOrder } from "./terms.js";
+import { termLabel, termOrder, termText } from "./terms.js";
 
 const PDFJS_CDN = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/";
 const STORAGE_KEY = "degreeAudit";
+const GPA_NAMES_ZH = { Overall: "总", Technical: "技术课程", College: "学院" };
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const OPTIONS_SHOWN = 8; // course chips shown per requirement before "show all"
 const GEN_ED_OPTIONS = 40; // Gen Ed courses looked at (best GPA first) before the list is trimmed
@@ -55,12 +57,12 @@ export function gpaCard(element, audit) {
   if (!audit?.gpas) return "";
   return element(
     "dl",
-    { className: "my-gpa", ariaLabel: "Your GPA, from your audit" },
+    { className: "my-gpa", ariaLabel: tr("Your GPA, from your audit", "你的 GPA（来自 audit）") },
     ...gpaSummary(audit.gpas).map(({ name, value, detail }) =>
       element(
         "div",
         { className: "my-gpa-item" },
-        element("dt", { textContent: `${name} GPA` }),
+        element("dt", { textContent: tr(`${name} GPA`, `${GPA_NAMES_ZH[name] ?? name} GPA`) }),
         element("dd", {}, element("strong", { textContent: value }), ` ${detail}`),
       ),
     ),
@@ -73,7 +75,10 @@ export function gpaCard(element, audit) {
  */
 export function clearEverything() {
   const sure = window.confirm(
-    "Clear everything? Your audit, your plan, your Gen Ed slots and every course you marked are removed from this browser. This can't be undone.",
+    tr(
+      "Clear everything? Your audit, your plan, your Gen Ed slots and every course you marked are removed from this browser. This can't be undone.",
+      "要清除全部内容吗？你的 audit、计划、通识空位和所有标记过的课程都会从这个浏览器里删除，而且无法恢复。",
+    ),
   );
   if (!sure) return false;
   save(null);
@@ -113,16 +118,20 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
 
   const STANDING_ORDER = { taken: 0, planned: 1, ready: 2, later: 3 };
   const STANDING_TEXT = {
-    taken: "taken",
-    planned: "planned",
-    ready: "you can take it now",
-    later: "needs prerequisites first",
+    taken: tr("taken", "已修"),
+    planned: tr("planned", "已计划"),
+    ready: tr("you can take it now", "现在就可以修"),
+    later: tr("needs prerequisites first", "需要先修课"),
   };
 
   function chip(id, title, state) {
     return element(
       "a",
-      { className: `audit-chip ${state}`, href: courseHash(id), title: `${id}: ${title} (${STANDING_TEXT[state]})` },
+      {
+        className: `audit-chip ${state}`,
+        href: courseHash(id),
+        title: tr(`${id}: ${title} (${STANDING_TEXT[state]})`, `${id}：${title}（${STANDING_TEXT[state]}）`),
+      },
       state === "taken" ? "✓ " : "",
       id,
     );
@@ -156,7 +165,7 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
         element(
           "p",
           { className: "audit-hint audit-counted" },
-          "Counted already: ",
+          tr("Counted already: ", "已计入："),
           ...counted.flatMap(([id], i) => [
             i > 0 ? ", " : "",
             element("a", { href: courseHash(id), textContent: `✓ ${id}` }),
@@ -168,7 +177,10 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       pieces.push(
         element("p", {
           className: "audit-hint",
-          textContent: genEd.length > 0 ? "Gen Ed courses that count, best first:" : "Courses that count, best first:",
+          textContent:
+            genEd.length > 0
+              ? tr("Gen Ed courses that count, best first:", "能计入的通识课，最合适的在前：")
+              : tr("Courses that count, best first:", "能计入的课程，最合适的在前："),
         }),
         element("div", { className: "audit-chips" }, ...chips.slice(0, OPTIONS_SHOWN)),
       );
@@ -177,7 +189,9 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           element(
             "details",
             { className: "audit-more" },
-            element("summary", { textContent: `Show all ${chips.length} courses` }),
+            element("summary", {
+              textContent: tr(`Show all ${chips.length} courses`, `显示全部 ${chips.length} 门课`),
+            }),
             element("div", { className: "audit-chips" }, ...chips.slice(OPTIONS_SHOWN)),
           ),
         );
@@ -187,17 +201,28 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       pieces.push(
         element("p", {
           className: "audit-hint audit-old",
-          textContent: `${hidden} older course${hidden === 1 ? "" : "s"} not offered lately ${hidden === 1 ? "is" : "are"} left out.`,
+          textContent: tr(
+            `${hidden} older course${hidden === 1 ? "" : "s"} not offered lately ${hidden === 1 ? "is" : "are"} left out.`,
+            `另有 ${hidden} 门最近没开的旧课没有列出。`,
+          ),
         }),
       );
     }
     if (anyLevel.length > 0)
-      pieces.push(element("p", { className: "audit-hint", textContent: `Also counts: ${anyLevel.join(", ")}.` }));
+      pieces.push(
+        element("p", {
+          className: "audit-hint",
+          textContent: tr(`Also counts: ${anyLevel.join(", ")}.`, `也可计入：${anyLevel.join("、")}。`),
+        }),
+      );
     if (part.notFrom.length > 0) {
       pieces.push(
         element("p", {
           className: "audit-hint",
-          textContent: `Doesn't count: ${part.notFrom.map(describePattern).join(", ")}.`,
+          textContent: tr(
+            `Doesn't count: ${part.notFrom.map(describePattern).join(", ")}.`,
+            `不能计入：${part.notFrom.map(describePattern).join("、")}。`,
+          ),
         }),
       );
     }
@@ -205,7 +230,10 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       pieces.push(
         element("p", {
           className: "audit-hint",
-          textContent: "The audit lists no courses for this one. Ask your advisor what counts.",
+          textContent: tr(
+            "The audit lists no courses for this one. Ask your advisor what counts.",
+            "audit 没有为这一项列出课程，请问问 advisor 什么课能计入。",
+          ),
         }),
       );
     }
@@ -258,9 +286,13 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
   }
 
   const COVERAGE_TEXT = {
-    planned: () => "✓ In your plan",
-    partly: (c) => `Partly planned: ${c.have} of ${c.need} ${c.unit}`,
-    none: () => "Not planned yet",
+    planned: () => tr("✓ In your plan", "✓ 已在计划中"),
+    partly: (c) =>
+      tr(
+        `Partly planned: ${c.have} of ${c.need} ${c.unit}`,
+        `部分已计划：${c.have}/${c.need} ${c.unit === "hours" ? "学分" : "门课"}`,
+      ),
+    none: () => tr("Not planned yet", "尚未计划"),
   };
 
   /** A small label saying how far the plan goes toward a part. */
@@ -282,7 +314,7 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
    * Spring 2028"), and open slots, in semester order. "" when there are none.
    */
   function planNote(part) {
-    const when = (term) => (term ? termLabel(term) : "no semester yet");
+    const when = (term) => (term ? termLabel(term) : tr("no semester yet", "尚未选学期"));
     const byTerm = (a, b) => Math.min(termOrder(a.term), 1e9) - Math.min(termOrder(b.term), 1e9);
     const planned = requirementCourses(rows, part)
       .map(([id]) => ({ id, term: myCourses.term(id) }))
@@ -299,11 +331,11 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
     const pieces = [];
     if (planned.length > 0) {
       pieces.push(
-        "Planned and counts for this: ",
+        tr("Planned and counts for this: ", "已计划并能计入这一项："),
         ...planned.flatMap(({ id, term }, i) => [
           i > 0 ? ", " : "",
           element("a", { href: courseHash(id), textContent: id }),
-          ` (${when(term)})`,
+          tr(` (${when(term)})`, `（${when(term)}）`),
         ]),
         ". ",
       );
@@ -312,21 +344,27 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       // A shared slot is named with both Gen Eds: "Humanities & the Arts + Western/Comparative Cultures".
       const list = open.map((slot) => `${slotTitle(slot)}, ${when(slot.term)}`).join("; ");
       pieces.push(
-        `Your plan has ${open.length === 1 ? "an open slot" : `${open.length} open slots`} for this (${list}). `,
-        element("a", { href: "#plan", textContent: "Pick courses on My plan →" }),
+        tr(
+          `Your plan has ${open.length === 1 ? "an open slot" : `${open.length} open slots`} for this (${list}). `,
+          `你的计划里有 ${open.length} 个空位可用于这一项（${list}）。`,
+        ),
+        element("a", { href: "#plan", textContent: tr("Pick courses on My plan →", "去“我的计划”选课 →") }),
       );
     }
     return element("p", { className: "audit-hint audit-plan-note" }, ...pieces);
   }
 
-  const needsText = (needs) => (needs ? `Still needs ${describeNeeds(needs)}` : "Still needs one of these");
+  const needsText = (needs) =>
+    needs
+      ? tr(`Still needs ${describeNeeds(needs)}`, `还需要 ${describeNeeds(needs)}`)
+      : tr("Still needs one of these", "还需要其中一项");
 
   /** "Pick 1 of 2 courses" for a part with a short list, else "Still needs 1 course". */
   function partNeedsText(part) {
     const listed = part.selectFrom.filter((pattern) => pattern.subject !== "*" && pattern.number.length === 3).length;
     const count = part.needs?.courses ?? (part.needs ? 0 : 1);
     if (count > 0 && !part.needs?.hours && listed > count && listed <= 6 && listed === part.selectFrom.length) {
-      return `Pick ${count} of these ${listed}`;
+      return tr(`Pick ${count} of these ${listed}`, `从这 ${listed} 门中选 ${count} 门`);
     }
     return needsText(part.needs);
   }
@@ -355,13 +393,16 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       element(
         "div",
         { className: "audit-item-head" },
-        element("h4", { textContent: `Pick one of ${group.length}` }),
-        element("span", { className: "audit-needs", textContent: "Meet any one of these" }),
+        element("h4", { textContent: tr(`Pick one of ${group.length}`, `${group.length} 选 1`) }),
+        element("span", { className: "audit-needs", textContent: tr("Meet any one of these", "满足其中任意一项") }),
         coverageBadge(coverage(closest, facts)),
       ),
       element("p", {
         className: "audit-hint",
-        textContent: `Only one of these ${group.length} is needed. The one your plan is closest to is open; open another to compare.`,
+        textContent: tr(
+          `Only one of these ${group.length} is needed. The one your plan is closest to is open; open another to compare.`,
+          `这 ${group.length} 项只需满足一项。已展开你的计划最接近的那项，也可以打开其他项比较。`,
+        ),
       }),
       ...group.map((part) => {
         const cover = coverage(part, facts);
@@ -372,7 +413,9 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
             "summary",
             {},
             element("span", { className: "audit-choice-title", textContent: titleCase(part.title) }),
-            part === closest ? element("span", { className: "audit-closest", textContent: "closest" }) : "",
+            part === closest
+              ? element("span", { className: "audit-closest", textContent: tr("closest", "最接近") })
+              : "",
             element("span", { className: "audit-needs", textContent: describeNeeds(part.needs) }),
             coverageBadge(cover),
           ),
@@ -401,7 +444,12 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
         ? element(
             "details",
             { className: "audit-done-parts" },
-            element("summary", { textContent: `✓ ${done.length} part${done.length === 1 ? "" : "s"} done` }),
+            element("summary", {
+              textContent: tr(
+                `✓ ${done.length} part${done.length === 1 ? "" : "s"} done`,
+                `✓ 已完成 ${done.length} 部分`,
+              ),
+            }),
             element("p", { textContent: done.join(" · ") }),
           )
         : "",
@@ -416,7 +464,7 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
   }
 
   /**
-   * "What's left": one line per unfinished requirement, what it needs, and whether the plan
+   * tr("What's left", "还剩什么"): one line per unfinished requirement, what it needs, and whether the plan
    * covers it yet. A line scrolls to its requirement below.
    */
   function overview(open, facts, anchorFor) {
@@ -435,8 +483,16 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
         const part = group.length === 1 ? group[0] : closestPart(group, facts);
         rowsLeft.push({
           title:
-            group.length === 1 ? titleCase(part.title) : `${titleCase(requirement.title)}: pick one of ${group.length}`,
-          needs: group.length === 1 ? partNeedsText(part) : `Closest: ${titleCase(part.title)}`,
+            group.length === 1
+              ? titleCase(part.title)
+              : tr(
+                  `${titleCase(requirement.title)}: pick one of ${group.length}`,
+                  `${titleCase(requirement.title)}：${group.length} 选 1`,
+                ),
+          needs:
+            group.length === 1
+              ? partNeedsText(part)
+              : tr(`Closest: ${titleCase(part.title)}`, `最接近：${titleCase(part.title)}`),
           cover: coverage(part, facts),
           anchor: anchorFor(group),
         });
@@ -449,10 +505,13 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       element(
         "div",
         { className: "audit-overview-head" },
-        element("h3", { textContent: "What's left" }),
+        element("h3", { textContent: tr("What's left", "还剩什么") }),
         element("span", {
           className: "audit-overview-count",
-          textContent: `${rowsLeft.length} to go · ${inPlan} already in your plan · ${rowsLeft.length - inPlan} not yet`,
+          textContent: tr(
+            `${rowsLeft.length} to go · ${inPlan} already in your plan · ${rowsLeft.length - inPlan} not yet`,
+            `还剩 ${rowsLeft.length} 项 · ${inPlan} 项已在计划中 · ${rowsLeft.length - inPlan} 项尚未计划`,
+          ),
         }),
       ),
       element(
@@ -495,9 +554,11 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       input,
       element("span", {
         className: "audit-drop-title",
-        textContent: audit ? "Upload a newer audit" : "Choose your audit PDF",
+        textContent: audit
+          ? tr("Upload a newer audit", "上传更新的 audit")
+          : tr("Choose your audit PDF", "选择你的 audit PDF"),
       }),
-      element("span", { className: "audit-drop-hint", textContent: "or drop it here" }),
+      element("span", { className: "audit-drop-hint", textContent: tr("or drop it here", "或拖到这里") }),
     );
     box.addEventListener("dragover", (event) => {
       event.preventDefault();
@@ -520,37 +581,53 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       element(
         "li",
         {},
-        "Open the ",
+        tr("Open the ", "打开 "),
         element("a", {
           href: DEGREE_AUDIT_HELP,
           target: "_blank",
           rel: "noopener",
-          textContent: "Degree Audit system",
+          textContent: tr("Degree Audit system", "Degree Audit 系统"),
         }),
-        " and sign in with your NetID.",
+        tr(" and sign in with your NetID.", "，用 NetID 登录。"),
       ),
-      element("li", { textContent: "Run an audit for your program and open its Audit Results." }),
-      element("li", { textContent: "Print it and choose “Save as PDF”, then upload that file here." }),
+      element("li", {
+        textContent: tr(
+          "Run an audit for your program and open its Audit Results.",
+          "为你的专业运行一次 audit，打开 Audit Results。",
+        ),
+      }),
+      element("li", {
+        textContent: tr(
+          "Print it and choose “Save as PDF”, then upload that file here.",
+          "打印时选择“另存为 PDF”，然后把文件上传到这里。",
+        ),
+      }),
     );
   }
 
   async function readFile(file) {
     if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
-      message = "That isn't a PDF. Save the audit with Print → Save as PDF, then upload it.";
+      message = tr(
+        "That isn't a PDF. Save the audit with Print → Save as PDF, then upload it.",
+        "这不是 PDF。请用“打印 → 另存为 PDF”保存 audit 后再上传。",
+      );
       draw();
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      message = "That file is over 10 MB, too big to be an audit.";
+      message = tr("That file is over 10 MB, too big to be an audit.", "文件超过 10 MB，不像是 audit。");
       draw();
       return;
     }
-    message = "Reading your audit…";
+    message = tr("Reading your audit…", "正在读取你的 audit…");
     draw();
     try {
       const parsed = readAudit(await pdfLines(file));
       if (requirementSections(parsed).length === 0) {
-        message = "This PDF doesn't look like a uAchieve degree audit. Upload the Audit Results page saved as a PDF.";
+        message = tr(
+          "This PDF doesn't look like a uAchieve degree audit. Upload the Audit Results page saved as a PDF.",
+          "这个 PDF 看起来不是 uAchieve 学位审核。请上传另存为 PDF 的 Audit Results 页面。",
+        );
         draw();
         return;
       }
@@ -562,10 +639,16 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
       const details = takenCourseDetails(parsed);
       // A new audit starts a fresh plan: the old plan was made for the old audit.
       myCourses.startOver(takenIds.map((id) => ({ id, status: "taken", ...details[id] })));
-      message = `Read your audit. My plan starts fresh with your ${takenIds.length} course${takenIds.length === 1 ? "" : "s"} from it.`;
+      message = tr(
+        `Read your audit. My plan starts fresh with your ${takenIds.length} course${takenIds.length === 1 ? "" : "s"} from it.`,
+        `已读取你的 audit。“我的计划”已用其中的 ${takenIds.length} 门课重新开始。`,
+      );
     } catch (error) {
       console.error(error);
-      message = "Couldn't read that PDF (or couldn't load the PDF reader; check your internet connection).";
+      message = tr(
+        "Couldn't read that PDF (or couldn't load the PDF reader; check your internet connection).",
+        "无法读取这个 PDF（也可能是 PDF 阅读器没加载成功，请检查网络）。",
+      );
     }
     draw();
   }
@@ -573,7 +656,10 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
   function clearAll() {
     if (!clearEverything()) return;
     audit = null;
-    message = "Cleared: your audit and your plan were removed from this browser.";
+    message = tr(
+      "Cleared: your audit and your plan were removed from this browser.",
+      "已清除：你的 audit 和计划已从这个浏览器删除。",
+    );
     draw();
   }
 
@@ -581,16 +667,20 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
     const intro = element(
       "header",
       { className: "audit-header" },
-      element("h2", { textContent: "Degree audit" }),
+      element("h2", { textContent: tr("Degree audit", "学位审核") }),
       element("p", {
         className: "audit-lead",
-        textContent:
+        textContent: tr(
           "Upload your uAchieve audit to see what's left for your degree and which of those courses you can take now.",
+          "上传你的 uAchieve audit，看看学位还差什么，以及其中哪些课现在就能修。",
+        ),
       }),
       element("p", {
         className: "audit-privacy",
-        textContent:
+        textContent: tr(
           "🔒 Your PDF is read in this browser and never uploaded. Only the requirements, course codes and GPAs are kept here, not your name or ID. Unofficial: your advisor and the official audit have the final word.",
+          "🔒 PDF 只在这个浏览器里读取，不会上传。这里只保存要求、课程代码和 GPA，不保存你的姓名或学号。非官方工具，最终以 advisor 和官方 audit 为准。",
+        ),
       }),
     );
     const upload = element(
@@ -604,8 +694,8 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
     const uploadArea = audit
       ? element(
           "details",
-          { className: "audit-upload-fold", open: Boolean(message) && !/^Read your audit/.test(message) },
-          element("summary", { textContent: "Upload a newer audit" }),
+          { className: "audit-upload-fold", open: Boolean(message) && !/^(Read your audit|已读取)/.test(message) },
+          element("summary", { textContent: tr("Upload a newer audit", "上传更新的 audit") }),
           upload,
         )
       : upload;
@@ -635,14 +725,20 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
         element(
           "div",
           {},
-          element("strong", { textContent: program || "Your program" }),
+          element("strong", { textContent: program || tr("Your program", "你的专业") }),
           element("span", {
-            textContent: [catalog && ` · ${catalog} catalog`, audit.preparedOn && ` · audit from ${audit.preparedOn}`]
+            textContent: [
+              catalog && tr(` · ${catalog} catalog`, ` · ${termText(catalog)}目录`),
+              audit.preparedOn && tr(` · audit from ${audit.preparedOn}`, ` · audit 日期 ${audit.preparedOn}`),
+            ]
               .filter(Boolean)
               .join(""),
           }),
           element("p", {
-            textContent: `${met.length} of ${audit.sections.length} requirements done, ${open.length} to go.`,
+            textContent: tr(
+              `${met.length} of ${audit.sections.length} requirements done, ${open.length} to go.`,
+              `${audit.sections.length} 项要求已完成 ${met.length} 项，还剩 ${open.length} 项。`,
+            ),
           }),
         ),
         element(
@@ -651,14 +747,14 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
           element("button", {
             type: "button",
             className: "btn btn-primary",
-            textContent: "Make a plan from this audit →",
+            textContent: tr("Make a plan from this audit →", "用这份 audit 做计划 →"),
             onclick: onMakePlan,
           }),
           element("button", {
             type: "button",
             className: "btn btn-ghost",
-            textContent: "Clear everything",
-            title: "Remove your audit and your plan from this browser",
+            textContent: tr("Clear everything", "全部清除"),
+            title: tr("Remove your audit and your plan from this browser", "从这个浏览器删除你的 audit 和计划"),
             onclick: clearAll,
           }),
         ),
@@ -667,19 +763,22 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
         ? gpaCard(element, audit)
         : element("p", {
             className: "audit-message",
-            textContent: "To see your GPA here, upload your audit again (this starts a fresh plan).",
+            textContent: tr(
+              "To see your GPA here, upload your audit again (this starts a fresh plan).",
+              "想在这里看到 GPA，请重新上传 audit（计划会重新开始）。",
+            ),
           }),
-      message && /^Read your audit/.test(message)
+      message && /^(Read your audit|已读取)/.test(message)
         ? element("p", { className: "audit-message", role: "status", textContent: message })
         : "",
       open.length > 0 ? overview(open, facts, anchorFor) : "",
       element(
         "p",
         { className: "audit-legend" },
-        element("span", { className: "audit-chip taken", textContent: "✓ taken" }),
-        element("span", { className: "audit-chip planned", textContent: "planned" }),
-        element("span", { className: "audit-chip ready", textContent: "can take now" }),
-        element("span", { className: "audit-chip later", textContent: "needs prerequisites first" }),
+        element("span", { className: "audit-chip taken", textContent: tr("✓ taken", "✓ 已修") }),
+        element("span", { className: "audit-chip planned", textContent: tr("planned", "已计划") }),
+        element("span", { className: "audit-chip ready", textContent: tr("can take now", "现在可修") }),
+        element("span", { className: "audit-chip later", textContent: tr("needs prerequisites first", "需要先修课") }),
       ),
       open.length > 0
         ? element(
@@ -687,12 +786,20 @@ export function createAuditView({ rows, element, getGraph, onMakePlan }) {
             { className: "audit-sections" },
             ...open.map((requirement) => sectionCard(requirement, graph, taken, facts, anchorFor)),
           )
-        : element("p", { className: "audit-all-done", textContent: "Every requirement on this audit is met. 🎉" }),
+        : element("p", {
+            className: "audit-all-done",
+            textContent: tr("Every requirement on this audit is met. 🎉", "这份 audit 上的所有要求都已满足。🎉"),
+          }),
       met.length > 0
         ? element(
             "details",
             { className: "audit-met" },
-            element("summary", { textContent: `✓ ${met.length} requirement${met.length === 1 ? "" : "s"} done` }),
+            element("summary", {
+              textContent: tr(
+                `✓ ${met.length} requirement${met.length === 1 ? "" : "s"} done`,
+                `✓ 已完成 ${met.length} 项要求`,
+              ),
+            }),
             element(
               "ul",
               {},

@@ -2,6 +2,8 @@
 // star map, Gen Ed requirements under the course search. Built by hand because the browser's
 // own <select> can't be animated or pick several nicely.
 
+import { tr } from "./i18n.js";
+
 const NAMES_IN_LABEL = 2;
 
 function make(tag, props = {}, ...children) {
@@ -24,7 +26,7 @@ function make(tag, props = {}, ...children) {
 export function createPicker(root, { items, noun, onChange }) {
   const chosen = new Set();
   const byCode = new Map(items.map((item) => [item.code, item]));
-  const allLabel = `All ${noun}`;
+  const allLabel = tr(`All ${noun}`, `全部${noun}`);
 
   const label = make("span", { className: "picker-label", textContent: allLabel });
   const button = make(
@@ -39,12 +41,12 @@ export function createPicker(root, { items, noun, onChange }) {
   const search = make("input", {
     type: "search",
     className: "picker-search",
-    placeholder: `Search ${noun}`,
+    placeholder: tr(`Search ${noun}`, `搜索${noun}`),
     autocomplete: "off",
   });
-  search.setAttribute("aria-label", `Search ${noun}`);
+  search.setAttribute("aria-label", tr(`Search ${noun}`, `搜索${noun}`));
   const summary = make("span", { className: "picker-summary" });
-  const clearButton = make("button", { type: "button", className: "picker-clear", textContent: "Clear" });
+  const clearButton = make("button", { type: "button", className: "picker-clear", textContent: tr("Clear", "清除") });
   const list = make("ul", { className: "picker-list" });
   list.setAttribute("role", "listbox");
   list.setAttribute("aria-multiselectable", "true");
@@ -69,7 +71,10 @@ export function createPicker(root, { items, noun, onChange }) {
         : picked.slice(0, NAMES_IN_LABEL).join(", ") +
           (picked.length > NAMES_IN_LABEL ? ` +${picked.length - NAMES_IN_LABEL}` : "");
     button.classList.toggle("has-choice", picked.length > 0);
-    summary.textContent = picked.length === 0 ? "Pick one or more" : `${picked.length} picked`;
+    summary.textContent =
+      picked.length === 0
+        ? tr("Pick one or more", "可多选")
+        : tr(`${picked.length} picked`, `已选 ${picked.length} 项`);
     clearButton.hidden = picked.length === 0;
   }
 
@@ -110,7 +115,9 @@ export function createPicker(root, { items, noun, onChange }) {
         option.addEventListener("click", () => toggle(item.code, option));
         return option;
       }),
-      shown.length === 0 ? make("li", { className: "picker-empty", textContent: `No ${noun} match.` }) : "",
+      shown.length === 0
+        ? make("li", { className: "picker-empty", textContent: tr(`No ${noun} match.`, `没有匹配的${noun}。`) })
+        : "",
     );
   }
 

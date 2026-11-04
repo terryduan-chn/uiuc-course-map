@@ -2,6 +2,7 @@
 // wait, the ones that can't be taken any more, and the finish date. Nothing in the plan is
 // changed here. No DOM or database code, so the tests can use it.
 
+import { tr } from "./i18n.js";
 import { bestTerm, courseIssues } from "./plan-insights.js";
 import { termLabel, termOrder } from "./terms.js";
 
@@ -90,20 +91,38 @@ export function changeImpact({ change, before, after, graph, facts, offeredSince
 /** A change's impact in words: { title, lines }. */
 export function changeSummary({ change, delayed, blocked, ownProblems, finishBefore, finishAfter }) {
   const { id, to, removed } = change;
-  const title = removed ? `Removed ${id}` : to ? `Moved ${id} to ${termLabel(to)}` : `Moved ${id} to no term`;
+  const title = removed
+    ? tr(`Removed ${id}`, `已移除 ${id}`)
+    : to
+      ? tr(`Moved ${id} to ${termLabel(to)}`, `已把 ${id} 移到 ${termLabel(to)}`)
+      : tr(`Moved ${id} to no term`, `已把 ${id} 移到“未定学期”`);
   const lines = [
-    ...ownProblems.map((text) => `${id}: ${text}.`),
-    ...delayed.map((course) => `${course.id} would have to wait until ${termLabel(course.to)}.`),
-    ...blocked.map((course) => `${course.id}: ${course.text}.`),
+    ...ownProblems.map((text) => tr(`${id}: ${text}.`, `${id}：${text}。`)),
+    ...delayed.map((course) =>
+      tr(
+        `${course.id} would have to wait until ${termLabel(course.to)}.`,
+        `${course.id} 要推迟到 ${termLabel(course.to)}。`,
+      ),
+    ),
+    ...blocked.map((course) => tr(`${course.id}: ${course.text}.`, `${course.id}：${course.text}。`)),
   ];
   const finish = finishAfter && termLabel(finishAfter);
   if (finishAfter !== finishBefore && finishBefore && finishAfter) {
     const since = delayed.length === 0 ? "You now" : `If ${delayed.length === 1 ? "it waits" : "they wait"}, you`;
-    lines.push(`${since} finish in ${finish} instead of ${termLabel(finishBefore)}.`);
+    lines.push(
+      tr(
+        `${since} finish in ${finish} instead of ${termLabel(finishBefore)}.`,
+        `${delayed.length === 0 ? "" : "如果推迟，"}修完时间会从 ${termLabel(finishBefore)} 变成 ${finish}。`,
+      ),
+    );
   } else if (lines.length === 0) {
-    lines.push(finish ? `No other courses affected. You still finish in ${finish}.` : "No other courses affected.");
+    lines.push(
+      finish
+        ? tr(`No other courses affected. You still finish in ${finish}.`, `其他课程不受影响，你仍然在 ${finish} 修完。`)
+        : tr("No other courses affected.", "其他课程不受影响。"),
+    );
   } else if (finish) {
-    lines.push(`You still finish in ${finish}.`);
+    lines.push(tr(`You still finish in ${finish}.`, `你仍然在 ${finish} 修完。`));
   }
   return { title, lines };
 }

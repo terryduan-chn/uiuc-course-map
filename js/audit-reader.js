@@ -2,6 +2,8 @@
 // No DOM code here: it works on the PDF's text lines, so the tests can run it in Node.
 // It keeps only requirements, course codes and GPAs, never the student's name or ID.
 
+import { tr } from "./i18n.js";
+
 const SECTION_INDENT = 104; // requirement titles and their EARNED/NEEDS lines start left of this
 // "17.0 GPA HOURS EARNED 58.50 POINTS 3.44 GPA"; the GPA itself isn't always printed.
 const GPA_LINE = /^([\d.]+) GPA HOURS EARNED ([\d.]+) POINTS(?: ([\d.]+) GPA)?/;
@@ -89,7 +91,9 @@ export function matchesPattern(id, { subject, number }) {
 export function describePattern({ subject, number }) {
   if (number.length === 3) return `${subject} ${number}`;
   const level = `${number.padEnd(3, "0")}-level`;
-  return subject === "*" ? `any ${level} course` : `any ${subject} ${level} course`;
+  return subject === "*"
+    ? tr(`any ${level} course`, `任意 ${number.padEnd(3, "0")} 级课程`)
+    : tr(`any ${subject} ${level} course`, `任意 ${subject} ${number.padEnd(3, "0")} 级课程`);
 }
 
 /** "NEEDS: 15.0 HOURS 5 COURSES" -> { hours: 15, courses: 5 }. */
@@ -261,8 +265,8 @@ export function sectionIsMet(section) {
 export function gpaSummary(gpas) {
   return gpas.map(({ name, hours, gpa }) =>
     gpa === null
-      ? { name, value: "—", detail: "no grades yet" }
-      : { name, value: gpa.toFixed(2), detail: `on ${hours} hour${hours === 1 ? "" : "s"}` },
+      ? { name, value: "—", detail: tr("no grades yet", "暂无成绩") }
+      : { name, value: gpa.toFixed(2), detail: tr(`on ${hours} hour${hours === 1 ? "" : "s"}`, `共 ${hours} 学分`) },
   );
 }
 
@@ -312,10 +316,12 @@ export function takenCourseIds(audit) {
 export function describeNeeds(needs) {
   if (!needs) return "";
   const pieces = [];
-  if (needs.hours) pieces.push(`${needs.hours} ${needs.hours === 1 ? "hour" : "hours"}`);
-  if (needs.courses) pieces.push(`${needs.courses} ${needs.courses === 1 ? "course" : "courses"}`);
-  if (needs.groups && pieces.length === 0) pieces.push(`${needs.groups} more ${needs.groups === 1 ? "part" : "parts"}`);
-  return pieces.length === 2 ? `${pieces[0]} (${pieces[1]})` : pieces.join("");
+  if (needs.hours) pieces.push(tr(`${needs.hours} ${needs.hours === 1 ? "hour" : "hours"}`, `${needs.hours} 学分`));
+  if (needs.courses)
+    pieces.push(tr(`${needs.courses} ${needs.courses === 1 ? "course" : "courses"}`, `${needs.courses} 门课`));
+  if (needs.groups && pieces.length === 0)
+    pieces.push(tr(`${needs.groups} more ${needs.groups === 1 ? "part" : "parts"}`, `还差 ${needs.groups} 部分`));
+  return pieces.length === 2 ? tr(`${pieces[0]} (${pieces[1]})`, `${pieces[0]}（${pieces[1]}）`) : pieces.join("");
 }
 
 /** "202608" -> "Fall 2026". */

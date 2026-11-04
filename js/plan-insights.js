@@ -2,10 +2,11 @@
 // degree's progress, a course's best semester, and courses that could replace one.
 // No DOM or database code here, so the tests can use it.
 
+import { tr } from "./i18n.js";
 import { genEdCodesFor, partGroups, requirementSections, sectionIsMet, titleCase } from "./audit-reader.js";
 import { missingRequirements } from "./graph-data.js";
 import { requirementLabel } from "./search.js";
-import { doneBy, nextMainTerm, termLabel, termOrder } from "./terms.js";
+import { doneBy, nextMainTerm, seasonName, termLabel, termOrder, termText } from "./terms.js";
 
 /** The kinds of Gen Ed slot a plan can hold, with the Gen Ed codes that fill each and a short name. */
 export const GEN_ED_SLOTS = [
@@ -21,6 +22,21 @@ export const GEN_ED_SLOTS = [
   // Not a Gen Ed: any course, for the hours a degree needs beyond its requirements (128 in all).
   { key: "FREE", name: "Free elective", short: "Free elective", codes: [] },
 ];
+const SLOT_CHINESE = {
+  HUM: ["人文与艺术", "人文"],
+  SBS: ["社会与行为科学", "社科"],
+  NAT: ["自然科学与技术", "自然科学"],
+  QR: ["定量推理", "定量"],
+  QR2: ["定量推理 II", "定量 II"],
+  WCC: ["西方/比较文化", "西方文化"],
+  NW: ["非西方文化", "非西方"],
+  US: ["美国少数族裔文化", "美国少数族裔"],
+  COMP: ["高级写作", "高级写作"],
+  FREE: ["自由选修", "自由选修"],
+};
+// `name` stays English: saved plans and audit titles are matched by it. These are what the page shows.
+export const slotLabel = (kind) => tr(kind.name, SLOT_CHINESE[kind.key][0]);
+export const slotShortLabel = (kind) => tr(kind.short, SLOT_CHINESE[kind.key][1]);
 export const SLOT_HOURS = 3; // a Gen Ed slot counts as a typical 3-hour course
 export const slotKind = (key) => GEN_ED_SLOTS.find((slot) => slot.key === key) ?? null;
 
@@ -33,7 +49,7 @@ export function slotKindFor(title) {
 /** "Humanities & the Arts + U.S. Minority Cultures" for slot kinds ["HUM", "US"]. */
 export const slotNames = (kinds) =>
   kinds
-    .map((kind) => slotKind(kind)?.name)
+    .map((kind) => slotKind(kind) && slotLabel(slotKind(kind)))
     .filter(Boolean)
     .join(" + ");
 
@@ -53,6 +69,22 @@ export const slotTitle = (slot) => slotNames([slot.kind, ...(slot.also ?? [])]);
 
 /** The slot kind a Gen Ed's name stands for ("Humanities & the Arts" -> its GEN_ED_SLOTS entry), or null. */
 export const slotKindNamed = (name) => GEN_ED_SLOTS.find((slot) => slot.name === name) ?? null;
+
+/**
+ * Why a course is in the plan, for the page. Saved reasons are English, so a plan made in one
+ * language reads right in the other; audit section titles stay as the audit wrote them.
+ */
+export function reasonText(reason) {
+  if (!reason) return reason;
+  const oneReason = (part) => {
+    const prerequisiteFor = part.match(/^Prerequisite for (.+)$/);
+    if (prerequisiteFor) return tr(part, `${prerequisiteFor[1]} 的先修课`);
+    if (part === "Free electives (hours to graduate)") return tr(part, "自由选修（凑够毕业学分）");
+    const kind = slotKindNamed(part);
+    return kind ? slotLabel(kind) : part;
+  };
+  return reason.split(" + ").map(oneReason).join(" + ");
+}
 
 /** A requirement part for a slot kind, the shape requirementCourses takes, to list its Gen Ed courses. */
 export const slotPart = (kind) => ({ title: kind.name.toUpperCase(), selectFrom: [], notFrom: [] });
@@ -85,15 +117,15 @@ export function describeMissing(groups) {
         ? group.ids[0]
         : `${requirementLabel(group.required, group.ids.length)}: ${group.ids.join(", ")}`,
     )
-    .join("; ");
+    .join(tr("; ", "；"));
 }
 
-/** "Fall and Spring", "Fall only", "Spring only", or "summer or winter only". */
+/** tr("Fall and Spring", "秋季和春季"), tr("Fall only", "仅秋季"), tr("Spring only", "仅春季"), or tr("summer or winter only", "仅夏季或冬季"). */
 export function seasonsText(seasons) {
-  if (seasons.has("FA") && seasons.has("SP")) return "Fall and Spring";
-  if (seasons.has("FA")) return "Fall only";
-  if (seasons.has("SP")) return "Spring only";
-  return "summer or winter only";
+  if (seasons.has("FA") && seasons.has("SP")) return tr("Fall and Spring", "秋季和春季");
+  if (seasons.has("FA")) return tr("Fall only", "仅秋季");
+  if (seasons.has("SP")) return tr("Spring only", "仅春季");
+  return tr("summer or winter only", "仅夏季或冬季");
 }
 
 /**
@@ -105,9 +137,22 @@ export function seasonsText(seasons) {
 export function courseIssues({ id, term, courses, graph, facts, offeredSince }) {
   const issues = [];
   const fact = facts?.get(id);
-  if (fact && !fact.offered) issues.push({ kind: "stale", text: `Not offered since ${offeredSince ?? "a while"}` });
+  if (fact && !fact.offered)
+    issues.push({
+      kind: "stale",
+      text: tr(
+        `Not offered since ${offeredSince ?? "a while"}`,
+        `${offeredSince ? `${termText(offeredSince)}以来` : "近期"}未开课`,
+      ),
+    });
   if (term && fact?.offered && fact.seasons.size > 0 && /^(FA|SP)/.test(term) && !fact.seasons.has(term.slice(0, 2))) {
-    issues.push({ kind: "season", text: `Runs ${seasonsText(fact.seasons)}, not ${termLabel(term).split(" ")[0]}` });
+    issues.push({
+      kind: "season",
+      text: tr(
+        `Runs ${seasonsText(fact.seasons)}, not ${termLabel(term).split(" ")[0]}`,
+        `开课时间是${seasonsText(fact.seasons)}，不在${seasonName(term)}`,
+      ),
+    });
   }
   const { before, same } = doneBy(courses, term, id);
   const missing = missingRequirements(graph, id, before, same);
@@ -116,13 +161,22 @@ export function courseIssues({ id, term, courses, graph, facts, offeredSince }) 
     const earlier = missing.filter((group) => !group.concurrent);
     const sameOrEarlier = missing.filter((group) => group.concurrent);
     const parts = [];
-    if (earlier.length) parts.push(`${describeMissing(earlier)} ${term ? "in an earlier semester" : "first"}`);
+    if (earlier.length)
+      parts.push(
+        tr(
+          `${describeMissing(earlier)} ${term ? "in an earlier semester" : "first"}`,
+          `${term ? "更早的学期先修" : "先修"} ${describeMissing(earlier)}`,
+        ),
+      );
     if (sameOrEarlier.length) {
       parts.push(
-        `${describeMissing(sameOrEarlier)} ${term ? "this semester or earlier" : "first or at the same time"}`,
+        tr(
+          `${describeMissing(sameOrEarlier)} ${term ? "this semester or earlier" : "first or at the same time"}`,
+          `${term ? "本学期或更早修" : "先修或同时修"} ${describeMissing(sameOrEarlier)}`,
+        ),
       );
     }
-    issues.push({ kind: "prereq", text: `Needs ${parts.join("; and ")}` });
+    issues.push({ kind: "prereq", text: tr(`Needs ${parts.join("; and ")}`, `需要${parts.join("；并且")}`) });
   }
   return issues;
 }

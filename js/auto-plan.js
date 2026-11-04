@@ -8,6 +8,7 @@
 // its prerequisites come before it, it is offered that season, and the semester stays near
 // 15 hours.
 
+import { tr } from "./i18n.js";
 import {
   describeNeeds,
   describePattern,
@@ -182,7 +183,7 @@ export function buildAutoPlan({
     if (section.parts.length === 0 && section.needs) {
       open.push({
         title: titleCase(section.title),
-        text: `Needs ${describeNeeds(section.needs)} in all.`,
+        text: tr(`Needs ${describeNeeds(section.needs)} in all.`, `总共需要 ${describeNeeds(section.needs)}。`),
         hoursNeeded: section.needs.hours ?? 0,
       });
       continue;
@@ -200,10 +201,13 @@ export function buildAutoPlan({
         }
         // Only "any 400-level course": the student picks.
         const anyLevel = part.selectFrom.filter((pattern) => pattern.subject === "*").map(describePattern);
-        const what = anyLevel.length > 0 ? ` from ${anyLevel.join(" or ")}` : "";
+        const what = anyLevel.length > 0 ? tr(` from ${anyLevel.join(" or ")}`, `，从${anyLevel.join("或")}中选`) : "";
         open.push({
           title: titleCase(part.title),
-          text: `Needs ${describeNeeds(part.needs) || "courses"}${what}. Pick these yourself.`,
+          text: tr(
+            `Needs ${describeNeeds(part.needs) || "courses"}${what}. Pick these yourself.`,
+            `需要 ${describeNeeds(part.needs) || "一些课程"}${what}。这些需要你自己选。`,
+          ),
         });
         continue;
       }
@@ -221,8 +225,11 @@ export function buildAutoPlan({
         open.push({
           title: titleCase(part.title),
           text: part.selectFrom.some((pattern) => pattern.subject === "*")
-            ? `Pick ${left} from ${choices.join(", ")}.`
-            : `Not enough recently offered courses to choose from; still ${left}. Ask your advisor.`,
+            ? tr(`Pick ${left} from ${choices.join(", ")}.`, `从 ${choices.join("、")} 中选 ${left}。`)
+            : tr(
+                `Not enough recently offered courses to choose from; still ${left}. Ask your advisor.`,
+                `最近开过的课不够选，还差 ${left}。请问问你的 advisor。`,
+              ),
         });
       }
     }
@@ -386,11 +393,18 @@ export function buildAutoPlan({
     if (covered >= part.needs.hours) continue;
     open.push({
       title: titleCase(part.title),
-      text: `Needs ${describeNeeds(part.needs)}${advanced ? " at the 300 level or above" : ""}; the plan adds ${covered}. Add more to cover it.`,
+      text: tr(
+        `Needs ${describeNeeds(part.needs)}${advanced ? " at the 300 level or above" : ""}; the plan adds ${covered}. Add more to cover it.`,
+        `需要 ${describeNeeds(part.needs)}${advanced ? "（300 级及以上）" : ""}，计划里已有 ${covered}，请再补一些。`,
+      ),
     });
   }
   for (const item of open) {
-    if (item.hoursNeeded) item.text += ` The plan adds ${plannedHours()} hours; fill the rest with electives.`;
+    if (item.hoursNeeded)
+      item.text += tr(
+        ` The plan adds ${plannedHours()} hours; fill the rest with electives.`,
+        ` 计划里已有 ${plannedHours()} 学分，其余用选修课补足。`,
+      );
     delete item.hoursNeeded;
   }
 

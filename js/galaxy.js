@@ -3,6 +3,7 @@
 // galaxy is a handful of draw calls instead of one per planet and per line.
 // Positions come precomputed from the import (graph_layout), so nothing is simulated here.
 
+import { tr } from "./i18n.js";
 import { subjectHue } from "./graph-data.js";
 
 const LINK_COLOR = "#6f7d99";
@@ -341,10 +342,10 @@ export async function createGalaxy(container, graph, layout, { onSelect }) {
   legend.innerHTML =
     '<span><i style="background:' +
     NEEDS_COLOR +
-    '"></i>needs</span>' +
+    `"></i>${tr("needs", "需要")}</span>` +
     '<span><i style="background:' +
     UNLOCKS_COLOR +
-    '"></i>unlocks</span>';
+    `"></i>${tr("unlocks", "解锁")}</span>`;
   container.append(legend);
 
   /** Labels the focused course and the most-needed of the kept courses. */
@@ -596,7 +597,10 @@ export async function createGalaxy(container, graph, layout, { onSelect }) {
       renderer.domElement.style.cursor = node ? "pointer" : "grab";
       tooltip.hidden = !node;
       if (!node) return;
-      tooltip.textContent = `${node.id}: ${node.title} · needed by ${node.dependents.length}`;
+      tooltip.textContent = tr(
+        `${node.id}: ${node.title} · needed by ${node.dependents.length}`,
+        `${node.id}：${node.title} · ${node.dependents.length} 门课需要它`,
+      );
       const box = container.getBoundingClientRect();
       tooltip.style.left = `${event.clientX - box.left + 14}px`;
       tooltip.style.top = `${event.clientY - box.top + 14}px`;

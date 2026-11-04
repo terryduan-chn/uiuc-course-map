@@ -1,9 +1,10 @@
-// The plan controls every page shows for a course: "+ Plan", ← → to move it a semester, the
+// The plan controls every page shows for a course: tr("+ Plan", "+ 计划"), ← → to move it a semester, the
 // "⋯" menu (semester, taken / planned, swap, back to a slot, remove) and its problem badges.
 
+import { tr } from "./i18n.js";
 import { savedAudit } from "./audit-view.js";
 import { focusKey, myCourses } from "./my-courses.js";
-import { requirementFor, slotKindNamed, slotNames, slotPart, swapOptions } from "./plan-insights.js";
+import { reasonText, requirementFor, slotKindNamed, slotNames, slotPart, swapOptions } from "./plan-insights.js";
 import { courseFacts, requirementCourses } from "./requirement-courses.js";
 import { gradeText } from "./search.js";
 import { currentTerm, nextMainTerm, previousMainTerm, termLabel, termOrder, termsAround } from "./terms.js";
@@ -18,7 +19,7 @@ export const planCourses = () =>
     .map((id) => ({ id, status: myCourses.status(id), term: myCourses.term(id), kind: myCourses.kind(id) }));
 
 /**
- * A "+ Plan" button for any course: adds it to next semester's plan. Once added it shows the
+ * A tr("+ Plan", "+ 计划") button for any course: adds it to next semester's plan. Once added it shows the
  * semester (pressing it again takes it out); a taken course just says so.
  */
 export function planButton(element, id, extraClass = "") {
@@ -27,23 +28,28 @@ export function planButton(element, id, extraClass = "") {
     const kind = myCourses.kind(id);
     return element("span", {
       className: `plan-button taken ${extraClass}`,
-      textContent: kind === "registered" ? "In progress" : kind === "credit" ? "✓ Credit" : "✓ Taken",
+      textContent:
+        kind === "registered"
+          ? tr("In progress", "在修")
+          : kind === "credit"
+            ? tr("✓ Credit", "✓ 已有学分")
+            : tr("✓ Taken", "✓ 已修"),
       title:
         kind === "registered"
-          ? `You're taking ${id} now`
+          ? tr(`You're taking ${id} now`, `你正在修 ${id}`)
           : kind === "credit"
-            ? `You have credit for ${id} from before UIUC`
-            : `You've taken ${id}`,
+            ? tr(`You have credit for ${id} from before UIUC`, `你入学前已有 ${id} 的学分`)
+            : tr(`You've taken ${id}`, `你修过 ${id}`),
     });
   }
   const term = myCourses.term(id);
   const button = element("button", {
     type: "button",
     className: `plan-button ${status ?? ""} ${extraClass}`,
-    textContent: status ? `✓ ${term ? termLabel(term) : "Planned"}` : "+ Plan",
+    textContent: status ? `✓ ${term ? termLabel(term) : tr("Planned", "已计划")}` : tr("+ Plan", "+ 计划"),
     title: status
-      ? `${id} is in your plan. Press to take it out.`
-      : `Add ${id} to your plan for ${termLabel(nextTerm())}`,
+      ? tr(`${id} is in your plan. Press to take it out.`, `${id} 已在你的计划里，点一下可以移除。`)
+      : tr(`Add ${id} to your plan for ${termLabel(nextTerm())}`, `把 ${id} 加入 ${termLabel(nextTerm())} 的计划`),
   });
   focusKey(button, `plan-${id}`);
   button.addEventListener("click", (event) => {
@@ -66,8 +72,12 @@ function termMenu(element, id, extraClass = "") {
   const term = myCourses.term(id);
   const select = element(
     "select",
-    { className: `term-menu ${extraClass}`, ariaLabel: `Semester for ${id}`, title: "Which semester" },
-    element("option", { value: "", textContent: "No term" }),
+    {
+      className: `term-menu ${extraClass}`,
+      ariaLabel: tr(`Semester for ${id}`, `${id} 的学期`),
+      title: tr("Which semester", "选择学期"),
+    },
+    element("option", { value: "", textContent: tr("No term", "未定学期") }),
     ...termChoices(term ? [term] : []).map((value) =>
       element("option", { value, textContent: termLabel(value), selected: value === term }),
     ),
@@ -104,8 +114,11 @@ export function moveButton({ element, direction, term, what, key, move }) {
       type: "button",
       className: "plan-action plan-arrow",
       textContent: earlier ? "←" : "→",
-      title: earlier ? "One semester earlier" : "One semester later",
-      ariaLabel: `Move ${what} one semester ${earlier ? "earlier" : "later"}`,
+      title: earlier ? tr("One semester earlier", "提前一个学期") : tr("One semester later", "推后一个学期"),
+      ariaLabel: tr(
+        `Move ${what} one semester ${earlier ? "earlier" : "later"}`,
+        `把${what}${earlier ? "提前" : "推后"}一个学期`,
+      ),
       disabled: !term && earlier,
       onclick: () => move(term ? (earlier ? previousMainTerm(term) : nextMainTerm(term)) : nextTerm()),
     }),
@@ -149,17 +162,23 @@ export function planControls({ element, rows, graph, id, extraClass = "" }) {
     "details",
     { className: "plan-menu" },
     focusKey(
-      element("summary", { className: "plan-action", title: "More", ariaLabel: `More for ${id}`, textContent: "⋯" }),
+      element("summary", {
+        className: "plan-action",
+        title: tr("More", "更多"),
+        ariaLabel: tr(`More for ${id}`, `${id} 的更多操作`),
+        textContent: "⋯",
+      }),
       `menu-${id}-${extraClass}`,
     ),
     element(
       "div",
       { className: "plan-menu-panel" },
-      element("label", { className: "plan-menu-label" }, "Semester", termMenu(element, id, extraClass)),
+      element("label", { className: "plan-menu-label" }, tr("Semester", "学期"), termMenu(element, id, extraClass)),
       element("button", {
         type: "button",
         className: "plan-menu-item",
-        textContent: status === "taken" ? "Mark as planned instead" : "Mark as taken",
+        textContent:
+          status === "taken" ? tr("Mark as planned instead", "改为已计划") : tr("Mark as taken", "标记为已修"),
         onclick: () => myCourses.set(id, other),
       }),
       // A course planned or marked taken this semester may be one you're taking now.
@@ -167,7 +186,7 @@ export function planControls({ element, rows, graph, id, extraClass = "" }) {
         ? element("button", {
             type: "button",
             className: "plan-menu-item",
-            textContent: "Mark as in progress",
+            textContent: tr("Mark as in progress", "标记为在修"),
             onclick: () => myCourses.setInProgress(id),
           })
         : "",
@@ -176,14 +195,17 @@ export function planControls({ element, rows, graph, id, extraClass = "" }) {
         ? element("button", {
             type: "button",
             className: "plan-menu-item",
-            textContent: `Back to an open slot (${slotNames(myCourses.fills(id))})`,
+            textContent: tr(
+              `Back to an open slot (${slotNames(myCourses.fills(id))})`,
+              `退回为空位（${slotNames(myCourses.fills(id))}）`,
+            ),
             onclick: () => myCourses.backToSlot(id),
           })
         : "",
       element("button", {
         type: "button",
         className: "plan-menu-item remove",
-        textContent: "Remove from plan",
+        textContent: tr("Remove from plan", "从计划中移除"),
         onclick: () => myCourses.set(id, null),
       }),
     ),
@@ -209,7 +231,10 @@ export function planControls({ element, rows, graph, id, extraClass = "" }) {
     const lost = (option) => myCourses.fills(id).filter((kind) => !option.keeps.includes(kind));
     if (options.length === 0) return;
     swapArea.append(
-      element("p", { className: "plan-menu-label", textContent: `Swap for another ${reason} course:` }),
+      element("p", {
+        className: "plan-menu-label",
+        textContent: tr(`Swap for another ${reason} course:`, `换成另一门${reasonText(reason)}的课：`),
+      }),
       ...options.map((option) =>
         element("button", {
           type: "button",
@@ -217,8 +242,10 @@ export function planControls({ element, rows, graph, id, extraClass = "" }) {
           textContent: [
             option.id,
             option.gpa ? gradeText(option.gpa, option.fourRate) : "",
-            option.ready ? "" : "needs prerequisites",
-            lost(option).length ? `reopens ${slotNames(lost(option))} slot` : "",
+            option.ready ? "" : tr("needs prerequisites", "需要先修课"),
+            lost(option).length
+              ? tr(`reopens ${slotNames(lost(option))} slot`, `${slotNames(lost(option))}空位会重新打开`)
+              : "",
           ]
             .filter(Boolean)
             .join(" · "),

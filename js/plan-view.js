@@ -1,6 +1,7 @@
 // The #plan page: your courses semester by semester, Gen Ed slots, Auto-plan, and what you
 // can take next. Each course's own controls (← → ⋯, badges) come from plan-controls.js.
 
+import { tr } from "./i18n.js";
 import { clearEverything, gpaCard, savedAudit } from "./audit-view.js";
 import { buildAutoPlan, TARGET_HOURS } from "./auto-plan.js";
 import { missingRequirements, readyNext } from "./graph-data.js";
@@ -14,16 +15,19 @@ import {
   seasonsText,
   semesterLoad,
   SLOT_HOURS,
+  reasonText,
   slotKind,
   slotKindsOf,
+  slotLabel,
   slotNames,
   slotOptions,
   slotPart,
+  slotShortLabel,
   slotTitle,
 } from "./plan-insights.js";
 import { courseFacts, requirementCourses } from "./requirement-courses.js";
 import { creditHours, gradeText, parseCourseCode, requirementLabel } from "./search.js";
-import { currentTerm, doneBy, nextMainTerm, planSemesters, termLabel, termOrder } from "./terms.js";
+import { currentTerm, doneBy, nextMainTerm, planSemesters, termLabel, termOrder, termText } from "./terms.js";
 
 /** The Fall or Spring the plan starts from by default: this one, or the next after a summer. */
 const currentMainTerm = () => (/^(FA|SP)/.test(currentTerm()) ? currentTerm() : nextMainTerm(currentTerm()));
@@ -61,7 +65,7 @@ export function createPlanView({ rows, element, getGraph }) {
   const courseHash = (id) => `#${id.replace(" ", "-")}`;
   // The hours your audit credited a course with, else the catalog's.
   const hoursOf = (id, info) => myCourses.hours(id) ?? creditHours(info.get(id)?.credit_hours);
-  const hoursText = (hours) => `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  const hoursText = (hours) => tr(`${hours} ${hours === 1 ? "hour" : "hours"}`, `${hours} 学分`);
 
   function actionButton(text, onclick, className = "") {
     return element("button", { type: "button", className: `plan-action ${className}`, textContent: text, onclick });
@@ -119,14 +123,18 @@ export function createPlanView({ rows, element, getGraph }) {
       element(
         "dl",
         { className: "plan-facts" },
-        element("dt", { textContent: "Grades" }),
+        element("dt", { textContent: tr("Grades", "成绩") }),
         element("dd", { textContent: gradeText(info?.average_gpa, info?.four_point_rate) }),
-        element("dt", { textContent: "Runs" }),
-        element("dd", { textContent: fact?.offered ? seasonsText(fact.seasons) : `not since ${offeredSince}` }),
+        element("dt", { textContent: tr("Runs", "开课") }),
+        element("dd", {
+          textContent: fact?.offered
+            ? seasonsText(fact.seasons)
+            : tr(`not since ${offeredSince}`, `${termText(offeredSince)}以来未开课`),
+        }),
       ),
       element("p", {
         className: "plan-details-label",
-        textContent: groups.length === 0 ? "No prerequisites" : "Prerequisites",
+        textContent: groups.length === 0 ? tr("No prerequisites", "没有先修课") : tr("Prerequisites", "先修课"),
       }),
       groups.length === 0
         ? ""
@@ -142,9 +150,14 @@ export function createPlanView({ rows, element, getGraph }) {
                 element("span", {
                   className: "plan-prereq-mark",
                   textContent: met ? "✓" : "✗",
-                  ariaLabel: met ? "met" : "not met",
+                  ariaLabel: met ? tr("met", "已满足") : tr("not met", "未满足"),
                 }),
-                group.ids.length > 1 ? `${requirementLabel(group.required, group.ids.length)}: ` : "",
+                group.ids.length > 1
+                  ? tr(
+                      `${requirementLabel(group.required, group.ids.length)}: `,
+                      `${requirementLabel(group.required, group.ids.length)}：`,
+                    )
+                  : "",
                 ...group.ids.flatMap((prerequisite, i) => [
                   i > 0 ? ", " : "",
                   element("a", {
@@ -160,7 +173,7 @@ export function createPlanView({ rows, element, getGraph }) {
         ? element(
             "p",
             { className: "plan-unlocks" },
-            `Unlocks ${node.dependents.length}: `,
+            tr(`Unlocks ${node.dependents.length}: `, `解锁 ${node.dependents.length} 门：`),
             ...node.dependents
               .slice(0, UNLOCKS_SHOWN)
               .flatMap((dependent, i) => [
@@ -170,7 +183,11 @@ export function createPlanView({ rows, element, getGraph }) {
             node.dependents.length > UNLOCKS_SHOWN ? "…" : "",
           )
         : "",
-      element("a", { href: courseHash(id), className: "plan-details-link", textContent: "Open course page →" }),
+      element("a", {
+        href: courseHash(id),
+        className: "plan-details-link",
+        textContent: tr("Open course page →", "打开课程页 →"),
+      }),
     );
   }
 
@@ -185,7 +202,7 @@ export function createPlanView({ rows, element, getGraph }) {
         {
           type: "button",
           className: "plan-course-head",
-          title: open ? "Hide details" : "Show details",
+          title: open ? tr("Hide details", "收起详情") : tr("Show details", "展开详情"),
           onclick: () => {
             if (expanded.has(id)) expanded.delete(id);
             else expanded.add(id);
@@ -193,7 +210,7 @@ export function createPlanView({ rows, element, getGraph }) {
           },
         },
         element("span", { className: "code", textContent: id }),
-        element("span", { className: "title", textContent: info?.title ?? "Not in the app's data" }),
+        element("span", { className: "title", textContent: info?.title ?? tr("Not in the app's data", "数据里没有") }),
         element("span", { className: "plan-chevron", ariaHidden: "true", textContent: open ? "▴" : "▾" }),
       ),
       `head-${id}`,
@@ -201,23 +218,33 @@ export function createPlanView({ rows, element, getGraph }) {
     head.setAttribute("aria-expanded", String(open));
     // One line about it: taken or in progress, auto, hours, its Gen Eds, and why it's in the plan.
     const fills = myCourses.fills(id);
-    const why = fills.length > 0 ? `Fills ${slotNames(fills)}` : myCourses.reason(id);
+    const why =
+      fills.length > 0 ? tr(`Fills ${slotNames(fills)}`, `填补${slotNames(fills)}`) : reasonText(myCourses.reason(id));
     // The Gen Eds this course counts for: one course can meet two (Humanities and Western).
     const genEds = slotKindsOf(facts.get(id)).map(slotKind);
-    const genEdText = genEds.length === 0 ? "" : `Counts for ${genEds.map((kind) => kind.name).join(" and ")}`;
+    const genEdText =
+      genEds.length === 0
+        ? ""
+        : tr(`Counts for ${genEds.map((kind) => kind.name).join(" and ")}`, `计入${genEds.map(slotLabel).join("和")}`);
     const meta = element(
       "p",
       { className: "plan-meta", title: [genEdText, why].filter(Boolean).join(". ") },
       status === "taken"
         ? myCourses.kind(id) === "registered"
-          ? element("span", { className: "plan-status registered", textContent: "In progress" })
-          : element("span", { className: "plan-status taken", textContent: "Taken" })
+          ? element("span", { className: "plan-status registered", textContent: tr("In progress", "在修") })
+          : element("span", { className: "plan-status taken", textContent: tr("Taken", "已修") })
         : "",
       myCourses.isAuto(id)
-        ? element("span", { className: "plan-auto", textContent: "auto", title: "Added by Auto-plan" })
+        ? element("span", {
+            className: "plan-auto",
+            textContent: tr("auto", "自动"),
+            title: tr("Added by Auto-plan", "由自动规划加入"),
+          })
         : "",
-      hours === null ? "" : element("span", { className: "plan-hours", textContent: `${hours} hr` }),
-      ...genEds.map((kind) => element("span", { className: "plan-gened", textContent: kind.short })),
+      hours === null
+        ? ""
+        : element("span", { className: "plan-hours", textContent: tr(`${hours} hr`, `${hours} 学分`) }),
+      ...genEds.map((kind) => element("span", { className: "plan-gened", textContent: slotShortLabel(kind) })),
       why ? element("span", { className: "plan-reason", textContent: `· ${why}` }) : "",
     );
     // ✕ in the corner takes it out of the plan in one click (the ⋯ menu has the same).
@@ -226,8 +253,8 @@ export function createPlanView({ rows, element, getGraph }) {
         type: "button",
         className: "plan-remove",
         textContent: "✕",
-        title: "Remove from plan",
-        ariaLabel: `Remove ${id} from the plan`,
+        title: tr("Remove from plan", "从计划中移除"),
+        ariaLabel: tr(`Remove ${id} from the plan`, `把 ${id} 从计划中移除`),
         onclick: () => myCourses.set(id, null),
       }),
       `remove-${id}`,
@@ -253,13 +280,13 @@ export function createPlanView({ rows, element, getGraph }) {
     const kind = slotKind(slot.kind);
     const title = slotTitle(slot); // "Humanities & the Arts + Western/Comparative Cultures" for a shared slot
     // The card shows short names ("Humanities + Western") so it stays as small as a course card.
-    const shortTitle = [slot.kind, ...slot.also].map((other) => slotKind(other).short).join(" + ");
+    const shortTitle = [slot.kind, ...slot.also].map((other) => slotShortLabel(slotKind(other))).join(" + ");
     const arrow = (direction) =>
       moveButton({
         element,
         direction,
         term: slot.term,
-        what: `the ${title} slot`,
+        what: tr(`the ${title} slot`, `${title}空位`),
         key: slot.id,
         move: (target) => myCourses.setSlotTerm(slot.id, target),
       });
@@ -270,9 +297,9 @@ export function createPlanView({ rows, element, getGraph }) {
       focusKey(
         element("summary", {
           className: "plan-action plan-slot-pick",
-          textContent: "Pick",
-          title: "Pick a course for this slot",
-          ariaLabel: `Pick a course for the ${title} slot`,
+          textContent: tr("Pick", "选课"),
+          title: tr("Pick a course for this slot", "为这个空位选一门课"),
+          ariaLabel: tr(`Pick a course for the ${title} slot`, `为${title}空位选一门课`),
         }),
         `pick-${slot.id}`,
       ),
@@ -292,28 +319,44 @@ export function createPlanView({ rows, element, getGraph }) {
           : requirementCourses(rows, slotPart(kind), { genEdLimit: limit }).map(([id]) => id);
       const options = slotOptions({ slot, candidates, courses, slots, graph, facts });
       if (options.length === 0) {
-        picks.append(element("p", { className: "plan-menu-label", textContent: "No recently offered courses found." }));
+        picks.append(
+          element("p", {
+            className: "plan-menu-label",
+            textContent: tr("No recently offered courses found.", "没有找到最近开过的课。"),
+          }),
+        );
         return;
       }
       const info = courseInfo(options.map((option) => option.id));
       const alsoText = (option) =>
         option.covers.length === 0
           ? ""
-          : `also ${option.covers.map((id) => slotKind(slots.find((other) => other.id === id).kind).name).join(", ")}`;
+          : tr(
+              `also ${option.covers.map((id) => slotLabel(slotKind(slots.find((other) => other.id === id).kind))).join(", ")}`,
+              `同时满足${option.covers.map((id) => slotLabel(slotKind(slots.find((other) => other.id === id).kind))).join("、")}`,
+            );
       // In a shared slot, say when a course meets only some of its Gen Eds (the rest stay open).
       const sharedText = (option) => {
         if (slot.also.length === 0) return "";
         const missed = slot.also.filter((other) => !option.meetsAlso.includes(other));
-        if (missed.length > 0) return `${slotNames(missed)} stays open`;
-        return slot.also.length === 1 ? "counts for both" : `counts for all ${slot.also.length + 1}`;
+        if (missed.length > 0) return tr(`${slotNames(missed)} stays open`, `${slotNames(missed)}仍然空着`);
+        return slot.also.length === 1
+          ? tr("counts for both", "两项都计入")
+          : tr(`counts for all ${slot.also.length + 1}`, `${slot.also.length + 1} 项都计入`);
       };
       picks.append(
         element("p", {
           className: "plan-menu-label",
           textContent:
             slot.also.length > 0
-              ? "Best first: fits this semester, counts for every Gen Ed in this slot, then higher GPA."
-              : "Best first: fits this semester, fills another slot too, then higher GPA.",
+              ? tr(
+                  "Best first: fits this semester, counts for every Gen Ed in this slot, then higher GPA.",
+                  "优先顺序：适合本学期，能计入这个空位的所有通识要求，然后是 GPA 更高的。",
+                )
+              : tr(
+                  "Best first: fits this semester, fills another slot too, then higher GPA.",
+                  "优先顺序：适合本学期，还能填另一个空位，然后是 GPA 更高的。",
+                ),
         }),
         ...options.map((option) =>
           element(
@@ -331,7 +374,7 @@ export function createPlanView({ rows, element, getGraph }) {
                 gradeText(option.gpa, option.fourRate),
                 sharedText(option),
                 alsoText(option),
-                option.ready ? "" : "needs prerequisites or another season",
+                option.ready ? "" : tr("needs prerequisites or another season", "需要先修课，或要换开课季节"),
               ]
                 .filter(Boolean)
                 .join(" · "),
@@ -345,10 +388,19 @@ export function createPlanView({ rows, element, getGraph }) {
       { className: `plan-course plan-slot${slot.auto ? " auto" : ""}` },
       element(
         "p",
-        { className: "plan-slot-head", title: `${title}: pick a course later` },
-        element("span", { className: "code", textContent: slot.kind === "FREE" ? "Elective slot" : "Gen Ed slot" }),
-        slot.auto ? element("span", { className: "plan-auto", textContent: "auto", title: "Added by Auto-plan" }) : "",
-        element("span", { className: "plan-hours", textContent: `${SLOT_HOURS} hr` }),
+        { className: "plan-slot-head", title: tr(`${title}: pick a course later`, `${title}：之后再选课`) },
+        element("span", {
+          className: "code",
+          textContent: slot.kind === "FREE" ? tr("Elective slot", "选修空位") : tr("Gen Ed slot", "通识空位"),
+        }),
+        slot.auto
+          ? element("span", {
+              className: "plan-auto",
+              textContent: tr("auto", "自动"),
+              title: tr("Added by Auto-plan", "由自动规划加入"),
+            })
+          : "",
+        element("span", { className: "plan-hours", textContent: tr(`${SLOT_HOURS} hr`, `${SLOT_HOURS} 学分`) }),
         element("span", { className: "title", textContent: shortTitle }),
       ),
       element(
@@ -363,8 +415,8 @@ export function createPlanView({ rows, element, getGraph }) {
             type: "button",
             className: "plan-action",
             textContent: "✕",
-            title: "Remove this slot",
-            ariaLabel: `Remove the ${title} slot`,
+            title: tr("Remove this slot", "移除这个空位"),
+            ariaLabel: tr(`Remove the ${title} slot`, `移除${title}空位`),
             onclick: () => myCourses.removeSlot(slot.id),
           }),
           `remove-${slot.id}`,
@@ -378,14 +430,14 @@ export function createPlanView({ rows, element, getGraph }) {
     const input = element("input", {
       type: "search",
       className: "plan-add-input",
-      placeholder: "Add a course, e.g. CS 225",
+      placeholder: tr("Add a course, e.g. CS 225", "添加课程，例如 CS 225"),
       autocomplete: "off",
-      ariaLabel: "Course code to add",
+      ariaLabel: tr("Course code to add", "要添加的课程代码"),
     });
     const term = element(
       "select",
-      { className: "term-menu", ariaLabel: "Semester for the course you add" },
-      element("option", { value: "", textContent: "No term" }),
+      { className: "term-menu", ariaLabel: tr("Semester for the course you add", "所添加课程的学期") },
+      element("option", { value: "", textContent: tr("No term", "未定学期") }),
       ...termChoices([]).map((value) =>
         element("option", { value, textContent: termLabel(value), selected: value === nextTerm() }),
       ),
@@ -395,12 +447,15 @@ export function createPlanView({ rows, element, getGraph }) {
     const add = (status) => {
       const code = parseCourseCode(input.value);
       if (!code) {
-        message.textContent = "Type a course code, like CS 225.";
+        message.textContent = tr("Type a course code, like CS 225.", "请输入课程代码，例如 CS 225。");
         return;
       }
       const id = `${code.subject} ${code.number}`;
       if (courseInfo([id]).size === 0) {
-        message.textContent = `${id} isn't in the course data. Check the code.`;
+        message.textContent = tr(
+          `${id} isn't in the course data. Check the code.`,
+          `课程数据里没有 ${id}，请检查代码。`,
+        );
         return;
       }
       // Each redraws the page, with the box empty again.
@@ -418,20 +473,23 @@ export function createPlanView({ rows, element, getGraph }) {
       element("button", {
         type: "button",
         className: "btn btn-primary",
-        textContent: "Add as planned",
+        textContent: tr("Add as planned", "加入计划"),
         onclick: () => add("planned"),
       }),
       element("button", {
         type: "button",
         className: "btn btn-ghost",
-        textContent: "Add as in progress",
-        title: `You're taking it now, in ${termLabel(currentTerm())}`,
+        textContent: tr("Add as in progress", "添加为在修"),
+        title: tr(
+          `You're taking it now, in ${termLabel(currentTerm())}`,
+          `你正在修这门课（${termLabel(currentTerm())}）`,
+        ),
         onclick: () => add("in progress"),
       }),
       element("button", {
         type: "button",
         className: "btn btn-ghost",
-        textContent: "Add as taken",
+        textContent: tr("Add as taken", "添加为已修"),
         onclick: () => add("taken"),
       }),
       message,
@@ -443,19 +501,22 @@ export function createPlanView({ rows, element, getGraph }) {
   function slotRow(term) {
     const kind = element(
       "select",
-      { className: "term-menu plan-slot-kind", ariaLabel: "Gen Ed slot to add" },
-      ...GEN_ED_SLOTS.map((slot) => element("option", { value: slot.key, textContent: slot.name })),
+      { className: "term-menu plan-slot-kind", ariaLabel: tr("Gen Ed slot to add", "要添加的通识空位") },
+      ...GEN_ED_SLOTS.map((slot) => element("option", { value: slot.key, textContent: slotLabel(slot) })),
     );
     return element(
       "div",
       { className: "plan-add-slot" },
-      element("span", { className: "plan-add-slot-label", textContent: "Or save a place for a Gen Ed:" }),
+      element("span", {
+        className: "plan-add-slot-label",
+        textContent: tr("Or save a place for a Gen Ed:", "或者先给通识课留个位置："),
+      }),
       kind,
       focusKey(
         element("button", {
           type: "button",
           className: "btn btn-ghost",
-          textContent: "Add Gen Ed slot",
+          textContent: tr("Add Gen Ed slot", "添加通识空位"),
           onclick: () => myCourses.addSlot(kind.value, term.value || null),
         }),
         "add-slot",
@@ -508,12 +569,18 @@ export function createPlanView({ rows, element, getGraph }) {
       return element(
         "div",
         { className: "plan-auto-panel" },
-        element("h3", { textContent: "Auto-plan" }),
+        element("h3", { textContent: tr("Auto-plan", "自动规划") }),
         element("p", {
-          textContent:
+          textContent: tr(
             "Upload your degree audit and the plan fills itself with courses for every requirement you still need.",
+            "上传学位 audit 后，计划会自动填入你还需要的每项要求对应的课程。",
+          ),
         }),
-        element("a", { href: "#audit", className: "btn btn-ghost", textContent: "Go to Audit →" }),
+        element("a", {
+          href: "#audit",
+          className: "btn btn-ghost",
+          textContent: tr("Go to Audit →", "前往学位审核 →"),
+        }),
       );
     }
     return element(
@@ -522,14 +589,20 @@ export function createPlanView({ rows, element, getGraph }) {
       element(
         "h3",
         {},
-        "Auto-plan",
+        tr("Auto-plan", "自动规划"),
         element("span", {
           className: "plan-auto-source",
-          textContent: ` from your ${audit.programName ?? "degree"} audit`,
+          textContent: tr(
+            ` from your ${audit.programName ?? "degree"} audit`,
+            `（来自你的 ${audit.programName ?? "学位"} audit）`,
+          ),
         }),
       ),
       element("p", {
-        textContent: `Fills ${termLabel(nextTerm())} onward with courses for every unmet requirement, about ${TARGET_HOURS} hours a semester. Gen Eds become slots you pick a course for. Your own planned courses stay.`,
+        textContent: tr(
+          `Fills ${termLabel(nextTerm())} onward with courses for every unmet requirement, about ${TARGET_HOURS} hours a semester. Gen Eds become slots you pick a course for. Your own planned courses stay.`,
+          `从 ${termLabel(nextTerm())} 起，为每项未满足的要求排课，每学期约 ${TARGET_HOURS} 学分。通识要求会变成空位，由你自己选课。你自己计划的课保持不变。`,
+        ),
       }),
       element(
         "div",
@@ -538,7 +611,7 @@ export function createPlanView({ rows, element, getGraph }) {
           element("button", {
             type: "button",
             className: "btn btn-primary",
-            textContent: generated ? "Re-plan" : "Auto-plan my degree",
+            textContent: generated ? tr("Re-plan", "重新规划") : tr("Auto-plan my degree", "自动规划我的学位"),
             onclick: generate,
           }),
           "auto-plan",
@@ -548,7 +621,7 @@ export function createPlanView({ rows, element, getGraph }) {
               element("button", {
                 type: "button",
                 className: "btn btn-ghost",
-                textContent: `Clear generated (${generated})`,
+                textContent: tr(`Clear generated (${generated})`, `清除自动生成的（${generated}）`),
                 onclick: () => {
                   lastResult = null;
                   myCourses.clearAuto();
@@ -574,19 +647,25 @@ export function createPlanView({ rows, element, getGraph }) {
       return element(
         "p",
         { className: "plan-result plan-old-save", role: "status" },
-        "Upload your audit again so this semester's courses show as in progress and AP or transfer credit gets its own card. ",
-        element("a", { href: "#audit", textContent: "Go to Audit →" }),
+        tr(
+          "Upload your audit again so this semester's courses show as in progress and AP or transfer credit gets its own card. ",
+          "请重新上传 audit，这样本学期的课会显示为在修，AP 和转学分也会有自己的卡片。",
+        ),
+        element("a", { href: "#audit", textContent: tr("Go to Audit →", "前往学位审核 →") }),
       );
     }
     return element(
       "p",
       { className: "plan-result plan-old-save", role: "status" },
-      `${now.length} course${now.length === 1 ? " is" : "s are"} marked taken in ${termLabel(currentTerm())}. Taking ${now.length === 1 ? "it" : "them"} now? `,
+      tr(
+        `${now.length} course${now.length === 1 ? " is" : "s are"} marked taken in ${termLabel(currentTerm())}. Taking ${now.length === 1 ? "it" : "them"} now? `,
+        `${termLabel(currentTerm())}有 ${now.length} 门课标记为已修。是正在修吗？`,
+      ),
       focusKey(
         element("button", {
           type: "button",
           className: "btn btn-primary",
-          textContent: "Mark them in progress",
+          textContent: tr("Mark them in progress", "标记为在修"),
           onclick: () => now.forEach((course) => myCourses.setInProgress(course.id)),
         }),
         "mark-in-progress",
@@ -614,7 +693,7 @@ export function createPlanView({ rows, element, getGraph }) {
           element("button", {
             type: "button",
             className: "btn btn-primary",
-            textContent: "Undo",
+            textContent: tr("Undo", "撤销"),
             onclick: () => myCourses.restore(lastChange.undo),
           }),
           "plan-change-undo",
@@ -623,8 +702,8 @@ export function createPlanView({ rows, element, getGraph }) {
           type: "button",
           className: "plan-remove",
           textContent: "✕",
-          title: "Close this note",
-          ariaLabel: "Close this note",
+          title: tr("Close this note", "关闭这条提示"),
+          ariaLabel: tr("Close this note", "关闭这条提示"),
           onclick: () => {
             lastChange = null;
             keepFocus(draw);
@@ -639,14 +718,14 @@ export function createPlanView({ rows, element, getGraph }) {
     if (!lastResult) return "";
     const terms = new Set([...lastResult.courses, ...lastResult.slots].map((item) => item.term));
     const slotCount = lastResult.slots.length;
-    const count = (n, what) => (n ? `${n} ${what}${n === 1 ? "" : "s"}` : "");
+    const count = (n, what, inChinese) => (n ? tr(`${n} ${what}${n === 1 ? "" : "s"}`, `${n} ${inChinese}`) : "");
     const electives = lastResult.slots.filter((slot) => slot.kind === "FREE").length;
     // "19 courses, 3 Gen Ed slots and 1 elective slot"
-    const added = new Intl.ListFormat("en").format(
+    const added = new Intl.ListFormat(tr("en", "zh")).format(
       [
-        count(lastResult.courses.length, "course"),
-        count(slotCount - electives, "Gen Ed slot"),
-        count(electives, "elective slot"),
+        count(lastResult.courses.length, "course", "门课"),
+        count(slotCount - electives, "Gen Ed slot", "个通识空位"),
+        count(electives, "elective slot", "个选修空位"),
       ].filter(Boolean),
     );
     return element(
@@ -655,26 +734,43 @@ export function createPlanView({ rows, element, getGraph }) {
       element("p", {
         className: "plan-result-lead",
         textContent: !added
-          ? "Nothing to add: your plan already covers every requirement it can fill."
-          : `Added ${added} over ${terms.size} semesters (marked “auto”). Open ⋯ on a course to swap it${slotCount ? "; press Pick on a slot to choose one" : ""}.`,
+          ? tr(
+              "Nothing to add: your plan already covers every requirement it can fill.",
+              "没有可添加的：你的计划已经覆盖了所有能填的要求。",
+            )
+          : tr(
+              `Added ${added} over ${terms.size} semesters (marked “auto”). Open ⋯ on a course to swap it${slotCount ? "; press Pick on a slot to choose one" : ""}.`,
+              `已在 ${terms.size} 个学期里加入${added}（标记为“自动”）。点课程上的 ⋯ 可以替换${slotCount ? "；点空位上的“选课”可以选一门" : ""}。`,
+            ),
       }),
       lastResult.open.length > 0
         ? element(
             "div",
             {},
-            element("p", { className: "plan-result-sub", textContent: "Still for you to pick:" }),
+            element("p", {
+              className: "plan-result-sub",
+              textContent: tr("Still for you to pick:", "还需要你自己选："),
+            }),
             element(
               "ul",
               {},
               ...lastResult.open.map((item) =>
-                element("li", {}, element("strong", { textContent: `${item.title}: ` }), item.text),
+                element(
+                  "li",
+                  {},
+                  element("strong", { textContent: tr(`${item.title}: `, `${item.title}：`) }),
+                  item.text,
+                ),
               ),
             ),
           )
         : "",
       element("p", {
         className: "plan-result-note",
-        textContent: "Unofficial: check the plan with your advisor and the official audit.",
+        textContent: tr(
+          "Unofficial: check the plan with your advisor and the official audit.",
+          "非官方：请和 advisor 及官方 audit 核对这份计划。",
+        ),
       }),
     );
   }
@@ -692,16 +788,19 @@ export function createPlanView({ rows, element, getGraph }) {
     const when = progress.lastTerm ? termLabel(progress.lastTerm) : null;
     const finish =
       progress.short > 0
-        ? `${hoursText(progress.short)} still to plan`
+        ? tr(`${hoursText(progress.short)} still to plan`, `还有 ${hoursText(progress.short)} 待规划`)
         : when
-          ? `On track to finish in ${when}`
-          : "Every hour is covered";
+          ? tr(`On track to finish in ${when}`, `预计 ${when} 修完`)
+          : tr("Every hour is covered", "所有学分都已覆盖");
     const bar = element(
       "div",
       {
         className: "plan-progress-bar",
         role: "img",
-        ariaLabel: `${progress.earned} hours earned, ${progress.planned} planned, ${progress.short} still to plan, of ${progress.total}`,
+        ariaLabel: tr(
+          `${progress.earned} hours earned, ${progress.planned} planned, ${progress.short} still to plan, of ${progress.total}`,
+          `共 ${progress.total} 学分：已获得 ${progress.earned}，已计划 ${progress.planned}，待规划 ${progress.short}`,
+        ),
       },
       element("span", { className: "earned", style: `width: ${percent(progress.earned)}` }),
       element("span", { className: "planned", style: `width: ${percent(shown)}` }),
@@ -712,15 +811,18 @@ export function createPlanView({ rows, element, getGraph }) {
       element(
         "div",
         { className: "plan-progress-numbers" },
-        element("span", {}, element("strong", { textContent: progress.earned }), " earned"),
-        element("span", {}, element("strong", { textContent: progress.planned }), " planned"),
+        element("span", {}, element("strong", { textContent: progress.earned }), tr(" earned", " 已获得")),
+        element("span", {}, element("strong", { textContent: progress.planned }), tr(" planned", " 已计划")),
         element(
           "span",
           { className: progress.short > 0 ? "short" : "done" },
           element("strong", { textContent: progress.short }),
-          " still to plan",
+          tr(" still to plan", " 待规划"),
         ),
-        element("span", { className: "plan-progress-total", textContent: `of ${progress.total} hours` }),
+        element("span", {
+          className: "plan-progress-total",
+          textContent: tr(`of ${progress.total} hours`, `共 ${progress.total} 学分`),
+        }),
       ),
       bar,
       gpaCard(element, audit),
@@ -728,10 +830,16 @@ export function createPlanView({ rows, element, getGraph }) {
         "p",
         { className: "plan-progress-note" },
         progress.requirements
-          ? `Requirements on your audit: ${progress.requirements.done} of ${progress.requirements.all} done · `
-          : "No audit yet, so 120 hours (most UIUC degrees need 120–128) · ",
+          ? tr(
+              `Requirements on your audit: ${progress.requirements.done} of ${progress.requirements.all} done · `,
+              `audit 上的要求：${progress.requirements.all} 项已完成 ${progress.requirements.done} 项 · `,
+            )
+          : tr(
+              "No audit yet, so 120 hours (most UIUC degrees need 120–128) · ",
+              "还没有 audit，先按 120 学分算（UIUC 多数学位需要 120–128）· ",
+            ),
         element("strong", { textContent: finish }),
-        progress.short > 0 && when ? ` · last planned semester ${when}` : "",
+        progress.short > 0 && when ? tr(` · last planned semester ${when}`, ` · 最后一个计划学期 ${when}`) : "",
       ),
     );
   }
@@ -741,12 +849,15 @@ export function createPlanView({ rows, element, getGraph }) {
     return element(
       "p",
       { className: "plan-help" },
-      "Press + Plan on any course, drag cards between semesters or use ← →, click a card for details, ⋯ for more. ",
-      element("span", { className: "plan-key taken", textContent: "taken" }),
-      element("span", { className: "plan-key planned", textContent: "planned" }),
-      element("span", { className: "plan-key auto", textContent: "auto-planned" }),
-      element("span", { className: "plan-key slot", textContent: "Gen Ed slot" }),
-      element("span", { className: "plan-key problem", textContent: "problem" }),
+      tr(
+        "Press + Plan on any course, drag cards between semesters or use ← →, click a card for details, ⋯ for more. ",
+        "在任意课程上点“+ 计划”，在学期之间拖动卡片或用 ← →，点击卡片看详情，点 ⋯ 看更多操作。",
+      ),
+      element("span", { className: "plan-key taken", textContent: tr("taken", "已修") }),
+      element("span", { className: "plan-key planned", textContent: tr("planned", "已计划") }),
+      element("span", { className: "plan-key auto", textContent: tr("auto-planned", "自动规划") }),
+      element("span", { className: "plan-key slot", textContent: tr("Gen Ed slot", "通识空位") }),
+      element("span", { className: "plan-key problem", textContent: tr("problem", "有问题") }),
     );
   }
 
@@ -768,7 +879,7 @@ export function createPlanView({ rows, element, getGraph }) {
                   href: courseHash(course.id),
                   className: "plan-taken-chip",
                   textContent: course.id,
-                  title: `${course.id}: ${info.get(course.id)?.title ?? ""} (${hoursOf(course.id, info)} hr)`,
+                  title: `${course.id}: ${info.get(course.id)?.title ?? ""} (${hoursOf(course.id, info)} ${tr("hr", "学分")})`,
                 }),
               ),
             ),
@@ -777,7 +888,10 @@ export function createPlanView({ rows, element, getGraph }) {
             "details",
             { className: "plan-taken-edit" },
             element("summary", {
-              textContent: `Edit ${takenCourses.length} taken course${takenCourses.length === 1 ? "" : "s"}`,
+              textContent: tr(
+                `Edit ${takenCourses.length} taken course${takenCourses.length === 1 ? "" : "s"}`,
+                `编辑 ${takenCourses.length} 门已修课程`,
+              ),
             }),
             element(
               "ul",
@@ -795,15 +909,18 @@ export function createPlanView({ rows, element, getGraph }) {
       "section",
       { className: "plan-semester credit" },
       semesterHead(
-        "Credit before UIUC",
-        element("span", { className: "plan-load normal", textContent: `${hours} hr` }),
+        tr("Credit before UIUC", "入学前学分"),
+        element("span", { className: "plan-load normal", textContent: tr(`${hours} hr`, `${hours} 学分`) }),
       ),
       element(
         "div",
         { className: "plan-semester-body" },
         element("p", {
           className: "plan-credit-note",
-          textContent: "AP, proficiency and transfer credit: it counts toward your degree, not toward a semester.",
+          textContent: tr(
+            "AP, proficiency and transfer credit: it counts toward your degree, not toward a semester.",
+            "AP、水平考试和转学分：计入学位，但不算在某个学期里。",
+          ),
         }),
         takenChips(credit, info, graph, facts, everything),
       ),
@@ -856,17 +973,25 @@ export function createPlanView({ rows, element, getGraph }) {
       "section",
       { className: `plan-semester ${when}` },
       semesterHead(
-        term === NO_TERM ? "No term yet" : termLabel(term),
-        when === "now" ? element("span", { className: "plan-now", textContent: "now" }) : "",
+        term === NO_TERM ? tr("No term yet", "未定学期") : termLabel(term),
+        when === "now" ? element("span", { className: "plan-now", textContent: tr("now", "本学期") }) : "",
         element("span", {
           className: `plan-load ${load}`,
-          textContent: `${hours} hr${load === "light" && hours > 0 ? " · light" : load === "heavy" ? " · heavy" : ""}`,
-          title: load === "heavy" ? "Over 18 hours" : load === "light" ? "Under 12 hours (below full time)" : "",
+          textContent: tr(
+            `${hours} hr${load === "light" && hours > 0 ? " · light" : load === "heavy" ? " · heavy" : ""}`,
+            `${hours} 学分${load === "light" && hours > 0 ? " · 偏少" : load === "heavy" ? " · 偏重" : ""}`,
+          ),
+          title:
+            load === "heavy"
+              ? tr("Over 18 hours", "超过 18 学分")
+              : load === "light"
+                ? tr("Under 12 hours (below full time)", "不足 12 学分（低于全日制）")
+                : "",
         }),
         problems > 0
           ? element("span", {
               className: "plan-problems",
-              textContent: `${problems} problem${problems === 1 ? "" : "s"}`,
+              textContent: tr(`${problems} problem${problems === 1 ? "" : "s"}`, `${problems} 个问题`),
             })
           : "",
       ),
@@ -880,8 +1005,11 @@ export function createPlanView({ rows, element, getGraph }) {
               className: "plan-drop-hint",
               textContent:
                 when === "now"
-                  ? "Add the courses you're taking this semester: type a code in Add a course and press Add as in progress."
-                  : "Drag a course here, or use ← → on a course.",
+                  ? tr(
+                      "Add the courses you're taking this semester: type a code in Add a course and press Add as in progress.",
+                      "添加你这学期正在修的课：在添加课程框里输入代码，然后点“添加为在修”。",
+                    )
+                  : tr("Drag a course here, or use ← → on a course.", "把课程拖到这里，或用课程上的 ← →。"),
             })
           : "",
       ),
@@ -908,11 +1036,14 @@ export function createPlanView({ rows, element, getGraph }) {
     const ready = readyNext(graph, new Set(courses.map((c) => c.id))).slice(0, READY_SHOWN);
     const cards = ready.map((id) => {
       const node = graph.byId.get(id);
-      const nowOrLater = missingRequirements(graph, id, taken).length === 0 ? "now" : "after your planned courses";
+      const nowOrLater =
+        missingRequirements(graph, id, taken).length === 0
+          ? tr("now", "现在")
+          : tr("after your planned courses", "修完计划中的课后");
       const term = suggestedTerm(graph, id, courses);
       return draggableCard(
         id,
-        { className: "plan-course ready", title: "Drag into a semester" },
+        { className: "plan-course ready", title: tr("Drag into a semester", "拖到某个学期") },
         element(
           "a",
           { href: courseHash(id), className: "plan-course-link" },
@@ -922,8 +1053,10 @@ export function createPlanView({ rows, element, getGraph }) {
         element(
           "div",
           { className: "plan-course-actions" },
-          element("span", { className: "plan-hours", textContent: `Ready ${nowOrLater}` }),
-          actionButton(`+ Plan for ${termLabel(term)}`, () => myCourses.set(id, "planned", term)),
+          element("span", { className: "plan-hours", textContent: tr(`Ready ${nowOrLater}`, `${nowOrLater}可修`) }),
+          actionButton(tr(`+ Plan for ${termLabel(term)}`, `+ 计划在 ${termLabel(term)}`), () =>
+            myCourses.set(id, "planned", term),
+          ),
         ),
       );
     });
@@ -933,7 +1066,7 @@ export function createPlanView({ rows, element, getGraph }) {
       element(
         "h3",
         {},
-        "Ready to take next",
+        tr("Ready to take next", "接下来可以修"),
         element("span", { className: "plan-load", textContent: `${ready.length}` }),
       ),
       cards.length === 0
@@ -941,8 +1074,11 @@ export function createPlanView({ rows, element, getGraph }) {
             className: "plan-empty",
             textContent:
               courses.length === 0
-                ? "Mark some courses and the courses they open up appear here."
-                : "No more courses open up from these yet.",
+                ? tr(
+                    "Mark some courses and the courses they open up appear here.",
+                    "标记一些课程后，它们解锁的课会出现在这里。",
+                  )
+                : tr("No more courses open up from these yet.", "这些课暂时没有解锁更多课程。"),
           })
         : element("ul", { className: "plan-list plan-ready-list" }, ...cards),
     );
@@ -981,13 +1117,13 @@ export function createPlanView({ rows, element, getGraph }) {
         element(
           "div",
           { className: "plan-title-row" },
-          element("h2", { textContent: "My plan" }),
+          element("h2", { textContent: tr("My plan", "我的计划") }),
           courses.length + slots.length > 0 || savedAudit()
             ? element("button", {
                 type: "button",
                 className: "btn btn-ghost plan-clear",
-                textContent: "Clear everything",
-                title: "Remove your plan and your audit from this browser",
+                textContent: tr("Clear everything", "全部清除"),
+                title: tr("Remove your plan and your audit from this browser", "从这个浏览器删除你的计划和 audit"),
                 onclick: () => {
                   // Auto-plan's note goes with the plan (set first: clearing redraws the page).
                   const shown = lastResult;
@@ -1008,7 +1144,12 @@ export function createPlanView({ rows, element, getGraph }) {
           "div",
           { className: "plan-tools" },
           autoPanel(),
-          element("div", { className: "plan-add-panel" }, element("h3", { textContent: "Add a course" }), addForm()),
+          element(
+            "div",
+            { className: "plan-add-panel" },
+            element("h3", { textContent: tr("Add a course", "添加课程") }),
+            addForm(),
+          ),
         ),
       ),
       oldSaveNote(courses),

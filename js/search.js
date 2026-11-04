@@ -1,5 +1,7 @@
 // Search and text helpers shared by the page and the tests. No DOM code here.
 
+import { tr } from "./i18n.js";
+
 export const MAX_RESULTS = 60;
 
 function escapeLike(text) {
@@ -135,10 +137,10 @@ export function parseCourseCode(text) {
   return match ? { subject: match[1].toUpperCase(), number: match[2] } : null;
 }
 
-/** How a requirement group reads: "Required", "Choose 1 of 3", "Choose 2 of 3". */
+/** How a requirement group reads: tr("Required", "必修"), "Choose 1 of 3", "Choose 2 of 3". */
 export function requirementLabel(required, total) {
-  if (total === 1) return "Required";
-  return `Choose ${required} of ${total}`;
+  if (total === 1) return tr("Required", "必修");
+  return tr(`Choose ${required} of ${total}`, `${total} 选 ${required}`);
 }
 
 /** "3 hours" -> 3, "3 OR 4 hours" -> 3, "" -> 0 (the smallest number the catalog gives). */
@@ -152,7 +154,13 @@ export function formatCreditHours(text) {
   const words = String(text ?? "")
     .trim()
     .replace(/\b(OR|TO)\b/g, (word) => word.toLowerCase());
-  return words.replace(/^1 hours$/, "1 hour");
+  return tr(
+    words.replace(/^1 hours$/, "1 hour"),
+    words
+      .replace(" or ", " 或 ")
+      .replace(" to ", " 到 ")
+      .replace(/ hours?$/, " 学分"),
+  );
 }
 
 /** "225" -> "200-level", "598" -> "500-level". */
@@ -229,5 +237,10 @@ export function buildGenEdQuery(codes, text = "") {
 
 /** A course's grades in words: "3.46 GPA · 45.12% got a 4.0". */
 export function gradeText(gpa, fourRate) {
-  return gpa == null ? "no grade data" : `${gpa.toFixed(2)} GPA · ${(fourRate * 100).toFixed(2)}% got a 4.0`;
+  return gpa == null
+    ? tr("no grade data", "暂无成绩数据")
+    : tr(
+        `${gpa.toFixed(2)} GPA · ${(fourRate * 100).toFixed(2)}% got a 4.0`,
+        `平均 GPA ${gpa.toFixed(2)} · ${(fourRate * 100).toFixed(2)}% 拿到 4.0`,
+      );
 }
