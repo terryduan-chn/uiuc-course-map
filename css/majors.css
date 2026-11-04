@@ -73,6 +73,14 @@
   margin: 0 0 10px;
 }
 
+.major-plan-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+
 .major-requirements h3 {
   margin: 18px 0 6px;
   font-size: 1.1rem;

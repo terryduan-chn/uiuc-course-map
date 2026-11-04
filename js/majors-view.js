@@ -2,11 +2,14 @@
 // one program's requirements checked against your Taken and Planned courses. Unofficial: it shows
 // the catalog's wording, and doesn't work out choices like "select two".
 
+import { buildAutoPlan } from "./auto-plan.js";
 import { missingRequirements } from "./graph-data.js";
-import { keepFocus, myCourses } from "./my-courses.js";
-import { planButton } from "./plan-controls.js";
-import { filterPrograms, programProgress, rowStatus } from "./programs.js";
+import { focusKey, keepFocus, myCourses } from "./my-courses.js";
+import { nextTerm, planButton } from "./plan-controls.js";
+import { filterPrograms, programProgress, requiredCourses, rowStatus } from "./programs.js";
+import { courseFacts } from "./requirement-courses.js";
 import { splitCourseCodes } from "./search.js";
+import { termLabel, termOrder } from "./terms.js";
 
 const CATALOG = "https://catalog.illinois.edu/undergraduate/";
 const courseHash = (id) => `#${id.replace(" ", "-")}`;
@@ -20,6 +23,7 @@ export function createMajorsView({ rows, element, getGraph }) {
   let titles = null; // course id -> title, looked up the first time a program opens
   let shownPath = null; // the program showing, or null for the list
   let query = "";
+  let planNote = null; // what the latest Plan all did: { title, lines, undo }
 
   const programAt = (path) => programs.find((program) => program.path === path);
   const statusOf = (id) => myCourses.status(id);
@@ -98,6 +102,100 @@ export function createMajorsView({ rows, element, getGraph }) {
     );
   }
 
+  /**
+   * Plans a program's required courses from next semester on, in prerequisite order, using
+   * Auto-plan's scheduling. Prerequisites it needs come too. Nothing in the plan moves.
+   */
+  function planAll(blocks) {
+    const wanted = requiredCourses(blocks, statusOf);
+    const undo = myCourses.snapshot();
+    const toPart = ({ id, reason }) => {
+      const [subject, number] = id.split(" ");
+      return {
+        label: "1",
+        title: reason,
+        needs: { courses: 1 },
+        selectFrom: [{ subject, number }],
+        notFrom: [],
+        courses: [],
+      };
+    };
+    const result = buildAutoPlan({
+      sections: [{ title: "PROGRAM", needs: null, notes: [], courses: [], parts: wanted.courses.map(toPart) }],
+      candidates: (part) => [`${part.selectFrom[0].subject} ${part.selectFrom[0].number}`],
+      facts: courseFacts(rows),
+      graph: getGraph(),
+      taken: new Set(myCourses.ids("taken")),
+      planned: myCourses.ids("planned").map((id) => ({ id, term: myCourses.term(id) })),
+      startTerm: nextTerm(),
+    });
+    const added = new Set(result.courses.map((course) => course.id));
+    const missed = wanted.courses.map((course) => course.id).filter((id) => !added.has(id));
+    const extra = result.courses.filter((course) => !wanted.courses.some(({ id }) => id === course.id)).length;
+    const terms = result.courses.map((course) => course.term).sort((a, b) => termOrder(a) - termOrder(b));
+    planNote = {
+      title:
+        added.size === 0
+          ? "No courses added"
+          : `Added ${added.size} course${added.size === 1 ? "" : "s"}, ${termLabel(terms[0])} to ${termLabel(terms.at(-1))}`,
+      lines: [
+        extra > 0
+          ? `${extra} of them ${extra === 1 ? "is a prerequisite" : "are prerequisites"} these courses need.`
+          : "",
+        missed.length > 0 ? `Not offered lately, so not added: ${missed.join(", ")}.` : "",
+        wanted.menus > 0
+          ? `${wanted.menus} list${wanted.menus === 1 ? "" : "s"} of choices left for you to pick from, plus Gen Eds and electives.`
+          : "",
+      ].filter(Boolean),
+      undo: added.size > 0 ? undo : null,
+    };
+    if (added.size > 0) myCourses.addAuto(result.courses);
+    else keepFocus(draw);
+  }
+
+  /** What the latest Plan all did, with Undo. */
+  function planAllNote() {
+    if (!planNote) return "";
+    const { title, lines, undo } = planNote;
+    return element(
+      "section",
+      { className: "plan-change", role: "status" },
+      element(
+        "div",
+        { className: "plan-change-text" },
+        element("strong", { textContent: title }),
+        ...lines.map((line) => element("p", { textContent: line })),
+        element("a", { href: "#plan", textContent: "See My plan →" }),
+      ),
+      element(
+        "div",
+        { className: "plan-change-actions" },
+        undo
+          ? element("button", {
+              type: "button",
+              className: "btn btn-primary",
+              textContent: "Undo",
+              onclick: () => {
+                planNote = null;
+                myCourses.restore(undo);
+              },
+            })
+          : "",
+        element("button", {
+          type: "button",
+          className: "plan-remove",
+          textContent: "✕",
+          title: "Close this note",
+          ariaLabel: "Close this note",
+          onclick: () => {
+            planNote = null;
+            keepFocus(draw);
+          },
+        }),
+      ),
+    );
+  }
+
   function programLinks(title, list) {
     return element(
       "section",
@@ -121,6 +219,7 @@ export function createMajorsView({ rows, element, getGraph }) {
     const parent = program.parent ? programAt(program.parent) : null;
     const concentrations = programs.filter((other) => other.parent === program.path);
     const { taken: done, planned, listed } = programProgress(blocks, statusOf);
+    const toPlan = requiredCourses(blocks, statusOf).courses.length;
     view.replaceChildren(
       element("a", {
         href: parent ? `#majors/${parent.path}` : "#majors",
@@ -145,6 +244,25 @@ export function createMajorsView({ rows, element, getGraph }) {
             " planned among the courses listed here",
           )
         : "",
+      toPlan > 0
+        ? element(
+            "div",
+            { className: "major-plan-all" },
+            focusKey(
+              element("button", {
+                type: "button",
+                className: "btn btn-primary",
+                textContent: `Plan all ${toPlan} required course${toPlan === 1 ? "" : "s"}`,
+                onclick: () => planAll(blocks),
+              }),
+              "major-plan-all",
+            ),
+            element("span", {
+              className: "major-note",
+              textContent: `Adds them from ${termLabel(nextTerm())} on, in prerequisite order. Lists of choices, Gen Eds and electives stay for you to pick.`,
+            }),
+          )
+        : "",
       element(
         "p",
         { className: "audit-privacy" },
@@ -163,6 +281,7 @@ export function createMajorsView({ rows, element, getGraph }) {
             className: "plan-empty",
             textContent: "The catalog page lists no requirements here. See the official page above.",
           }),
+      planAllNote(),
     );
   }
 
@@ -255,11 +374,13 @@ export function createMajorsView({ rows, element, getGraph }) {
     /** Shows one program by its path, or the list. */
     show(path) {
       view.hidden = false;
+      if (path !== shownPath) planNote = null;
       shownPath = path;
       draw();
     },
     hide() {
       view.hidden = true;
+      planNote = null;
     },
   };
 }

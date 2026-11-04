@@ -174,6 +174,14 @@ export const myCourses = {
     save();
   },
 
+  /** Adds generated courses ({ id, term, reason }) to the plan, leaving everything already in it. */
+  addAuto(courses) {
+    for (const { id, term, reason } of courses) {
+      if (COURSE_ID.test(id) && !entries.has(id)) entries.set(id, entry("planned", term, null, { auto: true, reason }));
+    }
+    save();
+  },
+
   /**
    * Replaces a planned course with another in the same semester, keeping why it's there. For a
    * course picked for Gen Ed slots, `keeps` lists the slot kinds the new course also fills; the
